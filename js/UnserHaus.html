@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <meta charset="utf-8"/>
+        <!-- shut up the silly Firefox favicon error message,
+             see https://stackoverflow.com/questions/31075893/im-getting-favicon-ico-error/ -->
+        <link rel="icon" href="data:;base64,iVBORw0KGgo=">
+        <script src="lil.gui017.min.js"></script>
+
+        <style type="text/css">
+
+         table,
+         th,
+         td,
+         caption {
+	         border: thin solid #a0a0a0;
+         }
+
+         table {
+	         border-collapse: collapse;
+	         border-spacing: 0;
+	         border-width: thin 0 0 thin;
+	         margin: 0 0 1em;
+	         table-layout: auto;
+	         /* Prevents HTML tables from becoming too wide */
+
+	         max-width: 100%;
+         }
+
+         th,
+         td {
+	         font-weight: normal;
+	         text-align: left;
+         }
+
+         th,
+         caption {
+	         background-color: #f1f3f4;
+	         font-weight: 700;
+         }
+
+         td {
+	         border-width: 0 1px 1px 0;
+         }
+
+         th,
+         td,
+         caption {
+	         padding: 0.4em 0.6em;
+         }
+
+         caption {
+	         text-align: center;
+	         border-width: 1px 1px 0 1px;
+         }
+
+         table.Eckdaten td {
+	         text-align: right;
+         }
+
+         table.Eckdaten tr: table.Eckdaten tr:last-of-type td {
+	         border-top: thin solid;
+         }
+
+        </style>
+
+
+        <title>Unser Haus am Wittenbergener Weg 60</title>
+    </head>
+    <body>
+
+        <h3>Plan des Grundstücks Wittenbergener Weg 60 (Flurstück 6429)</h3>
+
+        <!--         https://wiki.selfhtml.org/wiki/HTML/Tabellen/Aufbau_einer_Tabelle -->
+
+        <table class="Eckdaten">
+            <caption>Eckdaten WW 60</caption>
+            <tbody>
+                <tr> <td>Fläche Grundstück</td> <td id="FlaecheGrundStueck"></td></tr>
+                <tr> <td>Fläche Alter Weg</td> <td id="FlaecheWegAlt"></td></tr>
+                <tr> <td>Fläche Baufenster</td> <td id="FlaecheBaufenster"></td></tr>
+                <tr> <td>Grundfläche (Haus + Anbau)</td> <td id="Grundflaeche"></td></tr>
+                <tr> <td>66% der Grundfläche</td> <td id="Grundflaeche66"></td></tr>
+                <tr> <td>Fläche Dachterasse</td> <td id="FlaecheDachterasse"></td></tr>
+                <tr> <td>Fläche Hintergarten</td> <td id="FlaecheHintergarten"></td></tr>
+                <tr> <td>Giebelhöhe Süd</td> <td id="GiebelHoehe"></td></tr>
+                <tr> <td>Max. Giebelhöhe Süd</td> <td id="MaxGiebelHoehe"></td></tr>
+                <tr> <td>Max. Breite Veranda</td> <td id="VerandaBreite"></td></tr>
+                <tr> <td>Innenfläche Anbau</td> <td id="InnenflaecheAnbau"></td></tr>
+                <tr> <td>Innenfläche EG</td> <td id="InnenflaecheEG"></td></tr>
+                <tr> <td>Innenfläche OG</td> <td id="InnenflaecheOG"></td></tr>
+                <tr> <td>Gesamte Innenfläche</td> <td id="InnenflaecheGesamt"></td></tr>
+                <tr> <td>Budget Haus (ohne Keller)</td> <td id="BudgetHaus"></td></tr>
+
+            </tbody>
+        </table>
+        <br/>
+
+        <canvas id="canvas2D"
+                style="border: 1px solid;"
+                width="1100"
+                height="650">
+        </canvas>
+
+        <!-- <script type="text/javascript" src="../lib/three.min.js"> </script>
+             <script type="text/javascript" src="../lib/TrackballControls.js"> </script>
+             <script type="text/javascript" src="../lib/VertexNormalsHelper.js"> </script> -->
+        <script type="text/javascript" src="UnserHaus.js"> </script>
+    </body>
+</html>
