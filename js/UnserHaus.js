@@ -22,7 +22,7 @@ function cfgDefault() {
     showMinorGrid: true,
     gridLinewidth: 0.2,
     gridDist: 1,
-    zeigeCarport: false
+    zeigeAchsen: true
   };
 };
 
@@ -31,6 +31,7 @@ function cfgGrundstueckDefault() {
     show: true,
     zeigeMasse: true,
     zeigeAltesHaus: false,
+    zeigeCarport: false,
     NordSuedLaengeWestseite: 17.20,   // 17.20 hat Herr Knibbe am 21.12.22 als Länge angegeben
     NordSuedLaengeOstseite: 17.20,
     OstWestLaengeNordseite: 30.00,
@@ -162,26 +163,26 @@ initCfg();
 // * lil-gui
 function guiSetter(cfgObject, fieldName, value) {
   cfgObject[fieldName] = value;
-  zeichneAlles();
+  zeichne2DAlles();
 }
 
 const gui = new lil.GUI({title: "Einstellungen"});
 
 gui.add({reset() {
   initCfg();
-  zeichneAlles();
+  zeichne2DAlles();
 }}, "reset");
 gui.add(cfgGrundstueck, "show").name("Grundstück").onChange(v => {
   cfgGrundstueck.show=v;
   cfgGrundstueck.show ? guiGrdstck.show() : guiGrdstck.hide();
-  zeichneAlles();
+  zeichne2DAlles();
 
 });
 
 gui.add(cfgHaus, "show").name("Haus").onChange(v => {
   cfgHaus.show=v;
   cfgHaus.show ? guiHaus.show() : guiHaus.hide();
-  zeichneAlles();
+  zeichne2DAlles();
 
 });
 
@@ -189,7 +190,7 @@ const guiGrdstck = gui.addFolder("Grundstück");
 guiGrdstck.open(false);
 guiGrdstck.add(cfgGrundstueck.Baufenster, "zeigeMasse").name("Maße Baugrenze").onChange(v => guiSetter(cfgGrundstueck.Baufenster, "zeigeMasse", v));
 guiGrdstck.add(cfgGrundstueck, "zeigeAltesHaus").name("Altes Haus").onChange(v => guiSetter(cfgGrundstueck, "zeigeAltesHaus", v));
-guiGrdstck.add(cfg, "zeigeCarport").name("Carport").onChange(v => guiSetter(cfg, "zeigeCarport", v));
+guiGrdstck.add(cfgGrundstueck, "zeigeCarport").name("Carport").onChange(v => guiSetter(cfgGrundstueck, "zeigeCarport", v));
 guiGrdstck.add(cfgGrundstueck.WegAlt, "show").name("Alter Weg").onChange(v => guiSetter(cfgGrundstueck.WegAlt, "show", v));
 
 const guiHaus = gui.addFolder("Haus");
@@ -217,12 +218,12 @@ guiGitter.open(false);
 guiGitter.add(cfg, "gridDist", 0, 3, cfg.gridLinewidth).name("Gitter-Abstand").onChange(
   value => {
     cfg.gridDist = value;
-    zeichneAlles();
+    zeichne2DAlles();
   });
 guiGitter.add(cfg, "showMinorGrid").name("Zwischenlinien").onChange(
   value => {
     cfg.showMinorGrid = value;
-    zeichneAlles();
+    zeichne2DAlles();
   });;
 
 
@@ -537,8 +538,15 @@ function berechneGiebelhoehe() {
 
 // * 2-D Zeichnung
 
+function zeichne2DAchsen() {
+  if(cfg.zeigeAchsen) {
+    drawPolygon([new Point(0, 0), new Point(2, 0)], "red", 2);
+    drawPolygon([new Point(0, 0), new Point(0, 2)], "green", 2);
+  }
+}
+
 // Grundstueck
-function zeichneGrundstueck() {
+function zeichne2DGrundstueck() {
   if (cfgGrundstueck.show) {
     // Grundstück-Aussengrenze und Bäume
     const polyGrdst = cfgGrundstueck.Polygon;
@@ -670,7 +678,7 @@ function zeichneGrundstueck() {
   }
 }
 
-function zeichneHaus() {
+function zeichne2DHaus() {
   // Das Haus
   const polyAussen = cfgHaus.PolygonAussen();
   if(cfgHaus.show) {
@@ -851,7 +859,7 @@ function zeichneHaus() {
     = (Math.round(budgetHaus/1000)).toString() + " Tausend €";
 }
 
-function zeichneGrid() {
+function zeichne2DGrid() {
   // Grid
   if(cfg.gridDist >= cfg.gridLinewidth) {
     drawGrid(0, 0, cfg.gridDist, cfg.gridLinewidth, "gray");
@@ -861,7 +869,7 @@ function zeichneGrid() {
   }
 }
 
-function zeichneAltesHaus() {
+function zeichne2DAltesHaus() {
   if(cfgGrundstueck.show && cfgGrundstueck.zeigeAltesHaus) {
     const polyAltesHaus = [
       new Point(11.55, ycoordFromS(8.7)),
@@ -876,7 +884,7 @@ function zeichneAltesHaus() {
       new Point(11.55, ycoordFromS(0)),
       new Point(5, ycoordFromS(0)),
       new Point(5, ycoordFromS(8.7))];
-    // Möglichen Anbau einzeichnen
+    // Möglichen Anbau einzeichne2Dn
     const ol = copyPoint(polyAltesHaus[4], -2.25, -5.8);
     const polyAnbau = [polyAltesHaus[4],
                        copyPoint(polyAltesHaus[4], -2.25, 0),
@@ -889,10 +897,13 @@ function zeichneAltesHaus() {
     ctx2D.translate(68, -10);
     ctx2D.rotate(-Math.PI / 180 * 2);
     drawPolygon(polyAltesHaus, 'gray', 1);
-    // drawPolygon(polyAnbau, cfgHaus.col, 1, [2,3]);
+    drawPolygon(polyAnbau, cfgHaus.col, 1, [2,3]);
+    // bemassung(polyAnbau[1], polyAnbau[2], 'l');
+    bemassung(polyAnbau[2], polyAnbau[3], 't');
+    // bemassung(polyAnbau[3], polyAnbau[4], 'r');
     setStdTransformState();
-    // console.log('areaPolygon(polyAnbau)=', areaPolygon(polyAnbau));
-    // console.log('areaPolygon(polyAltesHausOhneAnbau)=', areaPolygon(polyAltesHausOhneAnbau));
+    console.log('areaPolygon(polyAnbau)=', areaPolygon(polyAnbau));
+    console.log('areaPolygon(polyAltesHausOhneAnbau)=', areaPolygon(polyAltesHausOhneAnbau));
 
     let x = cfgGrundstueck.AbstBaugrenzeW - 0.24;
 
@@ -913,9 +924,9 @@ function zeichneAltesHaus() {
 }
 
 
-function zeichneCarport() {
+function zeichne2DCarport() {
 
-  if(cfg.zeigeCarport) {
+  if(cfgGrundstueck.zeigeCarport) {
     const p1 = new Point(xcoordFromBGO(-12.5), 5);
     const p2 = new Point(xcoordFromBGO(-14.05), 14);
     const p3 = copyPoint(p2, -3, 0);
@@ -939,83 +950,105 @@ function zeichneCarport() {
 
 
 // Main
-function zeichneAlles() {
+function zeichne2DAlles() {
   berechneOG();
   ctx2D.clearRect(0,0, canvas2D.width, canvas2D.height);
-  zeichneGrundstueck();
-  zeichneHaus();
-  zeichneAltesHaus();
-  zeichneCarport();
-  zeichneGrid();
+  zeichne2DGrundstueck();
+  zeichne2DHaus();
+  zeichne2DAltesHaus();
+  zeichne2DCarport();
+  zeichne2DGrid();
+  zeichne2DAchsen();
 }
-zeichneAlles();
+zeichne2DAlles();
+
+
+
 // * 3-D Zeichnung
 
-if(false) {
+// if(true) {
 
-  // ** Hilfsfunktionen 3D
-  function polygon2Shape(polygon) {
-    const shape = new THREE.Shape();
-    shape.moveTo(polygon[0].x, polygon[0].y);
-    for(let k = 1; k<polygon.length; ++k) {
-      shape.lineTo(polygon[k].x, polygon[k].y);
-    }
-    // Polygon schließen:
-    shape.lineTo(polygon[0].x, polygon[0].y);
-
-    return shape;
+// ** Hilfsfunktionen 3D
+function polygon2Shape(polygon) {
+  const shape = new THREE.Shape();
+  shape.moveTo(polygon[0].x, polygon[0].y);
+  for(let k = 1; k<polygon.length; ++k) {
+    shape.lineTo(polygon[k].x, polygon[k].y);
   }
+  // Polygon schließen:
+  shape.lineTo(polygon[0].x, polygon[0].y);
 
-  // ** Initialize webGL
-
-  const canvas3DWidth = 1100;
-  const canvas3DHeight = 650;
-  const zFightingOffset = 0.01;
-  const renderer = new THREE.WebGLRenderer({antialias:true});
-  renderer.setSize( canvas3DWidth, canvas3DHeight );  // gleiche Groesse wie 2D-Zeichnung
-  renderer.setClearColor('rgb(225,255,255)');
-  document.body.appendChild( renderer.domElement );
-
-  const scene = new THREE.Scene();
-  const camera = new THREE.PerspectiveCamera(45, canvas3DWidth / canvas3DHeight, 0.1, 100);
-  camera.position.set(50,-10, 10);
-  camera.lookAt(0, -10, 0);
-  camera.up.set(0,0,1);
-  scene.add(camera);
-
-  camera.lookAt(scene.position);
-  // remove in final version:
-  const axHelper = new THREE.AxesHelper(5);
-  // axHelper.material.needsUpdate = true;
-  // axHelper.material.linewidth = 5;
-  scene.add(axHelper);
-
-  // const box = new THREE.Mesh(new THREE.BoxGeometry(4,4,4),
-  //                            new THREE.MeshBasicMaterial({color:'#000000'}));
-  // scene.add(box);
-  const baseMat = new THREE.MeshBasicMaterial({color:'#404040',
-                                               side:THREE.DoubleSide});
-  baseMat.transparent = true;
-  baseMat.opacity=0.5;
-  const basePlane = new THREE.Mesh(new THREE.PlaneGeometry(500, 500),
-                                   baseMat);
-  scene.add(basePlane);
-
-  const grundstueck = new THREE.Mesh(new THREE.ShapeGeometry(polygon2Shape(cfgGrundstueck.Polygon)),
-                                     new THREE.MeshBasicMaterial({color:'#00ff00',
-                                                                  side:THREE.DoubleSide}));
-  grundstueck.position.z = zFightingOffset;
-  grundstueck.rotation.x = Math.PI;
-  scene.add(grundstueck);
-
-  // ** Render loop
-  const controls = new THREE.TrackballControls(camera, renderer.domElement);
-
-  function render() {
-    requestAnimationFrame(render);
-
-    renderer.render(scene, camera);
-    controls.update();
-  }
-  render();
+  return shape;
 }
+
+// ** Initialize webGL
+
+const canvas3DWidth = 1100;
+const canvas3DHeight = 650;
+const zFightingOffset = -0.01;
+const renderer = new THREE.WebGLRenderer({antialias:true});
+renderer.setSize( canvas3DWidth, canvas3DHeight );  // gleiche Groesse wie 2D-Zeichnung
+renderer.setClearColor('rgb(225,255,255)');
+document.body.appendChild( renderer.domElement );
+
+const scene = new THREE.Scene();
+const camera = new THREE.PerspectiveCamera(45, canvas3DWidth / canvas3DHeight, 0.1, 200);
+camera.position.set(50,10, -10);
+camera.lookAt(0, -10, 0);
+camera.up.set(0,0,-1);
+scene.add(camera);
+
+camera.lookAt(scene.position);
+
+const axHelper = new THREE.AxesHelper(5);
+scene.add(axHelper);
+
+
+const basePlane3D = new THREE.Mesh(new THREE.PlaneGeometry(500, 500),
+                                   new THREE.MeshBasicMaterial({color:'#404040',
+                                                                side:THREE.DoubleSide}));
+basePlane3D.material.transparent = true;
+basePlane3D.material.opacity=0.5;
+scene.add(basePlane3D);
+
+const WW603D = new THREE.Object3D();
+scene.add(WW603D);
+
+function zeichne3DGrundstueck() {
+  const Grundstueck = new THREE.Object3D();
+  const Grundstuecksflaeche = new THREE.Mesh(new THREE.ShapeGeometry(polygon2Shape(cfgGrundstueck.Polygon)),
+                                             new THREE.MeshBasicMaterial({color:'#00ff00',
+                                                                          side:THREE.DoubleSide}));
+  Grundstuecksflaeche.material.transparent = true;
+  Grundstuecksflaeche.material.opacity = 0.7;
+  Grundstuecksflaeche.position.z = zFightingOffset;
+  Grundstueck.add(Grundstuecksflaeche);
+  const Baufenster = new THREE.Mesh(new THREE.ShapeGeometry(polygon2Shape(cfgGrundstueck.Baufenster.Polygon)),
+                                    new THREE.MeshBasicMaterial({color:'#ff0000',
+                                                                 side:THREE.DoubleSide}));
+  Baufenster.position.z = 2 * zFightingOffset;
+  Baufenster.material.transparent = true;
+  Baufenster.material.opacity = 0.2;
+  Grundstueck.add(Baufenster);
+  return Grundstueck;
+}
+
+const Grundstueck3D = zeichne3DGrundstueck();
+WW603D.add(Grundstueck3D);
+
+
+// ** Render loop
+const controls = new THREE.TrackballControls(camera, renderer.domElement);
+
+function render() {
+  requestAnimationFrame(render);
+
+  axHelper.visible = cfg.zeigeAchsen;
+  Grundstueck3D.children.forEach(c=>c.visible = cfgGrundstueck.show);
+  // Baufenster.visible = cfgGrundstueck.show && cfgGrundstueck.Baufenster.show;
+
+  renderer.render(scene, camera);
+  controls.update();
+}
+render();
+// }
