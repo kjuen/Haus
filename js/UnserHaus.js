@@ -659,10 +659,10 @@ function zeichneGrundstueck() {
         bemassung(polyBF[1], polyBF[2], 'r');
         bemassung(polyBF[2], polyBF[3], 't');
         bemassung(polyBF[3], new Point(polyBF[3].x, ycoordFromN(0)), 'r');
-       // bemassung(polyBF[3], polyBF[4], 'r');
+        // bemassung(polyBF[3], polyBF[4], 'r');
         // Mass von der Kastanie zum Baufenster
         const kastanieSued = new Point(xcoordFromW(cfgGrundstueck.Kastanie.AbstW),
-                                      ycoordFromN(cfgGrundstueck.Kastanie.AbstN + cfgGrundstueck.Kastanie.Radius));
+                                       ycoordFromN(cfgGrundstueck.Kastanie.AbstN + cfgGrundstueck.Kastanie.Radius));
         const tmpPoint = new Point(kastanieSued.x, polyBF[0].y);
         bemassung(tmpPoint, kastanieSued, 'r', 0);
       }
@@ -777,10 +777,10 @@ function zeichneHaus() {
     wflOG += x * cfgHaus.GaubeOstBreite;
 
     if (cfgHaus.show) {
-    const polyGaubeAussen = [copyPoint(mitteAussen, 0, cfgHaus.GaubeOstBreite/2),
-                             copyPoint(mitteAussen, 0, -cfgHaus.GaubeOstBreite/2),
-                             copyPoint(mitteAussen, -tiefe, -cfgHaus.GaubeOstBreite/2),
-                             copyPoint(mitteAussen, -tiefe, cfgHaus.GaubeOstBreite/2)];
+      const polyGaubeAussen = [copyPoint(mitteAussen, 0, cfgHaus.GaubeOstBreite/2),
+                               copyPoint(mitteAussen, 0, -cfgHaus.GaubeOstBreite/2),
+                               copyPoint(mitteAussen, -tiefe, -cfgHaus.GaubeOstBreite/2),
+                               copyPoint(mitteAussen, -tiefe, cfgHaus.GaubeOstBreite/2)];
       drawPolygon(polyGaubeAussen, cfgHaus.col, 1);
       drawPolygon([middlePoint(polyGaubeAussen[2], polyGaubeAussen[3]), polyGaubeAussen[0]],cfgHaus.col, 0.8);
       drawPolygon([middlePoint(polyGaubeAussen[2], polyGaubeAussen[3]), polyGaubeAussen[1]],cfgHaus.col, 0.8);
@@ -796,10 +796,10 @@ function zeichneHaus() {
     wflOG += x * cfgHaus.GaubeWestBreite;
 
     if (cfgHaus.show) {
-    const polyGaubeAussen = [copyPoint(mitteAussen, 0, cfgHaus.GaubeWestBreite/2),
-                             copyPoint(mitteAussen, 0, -cfgHaus.GaubeWestBreite/2),
-                             copyPoint(mitteAussen, tiefe, -cfgHaus.GaubeWestBreite/2),
-                             copyPoint(mitteAussen, tiefe, cfgHaus.GaubeWestBreite/2)];
+      const polyGaubeAussen = [copyPoint(mitteAussen, 0, cfgHaus.GaubeWestBreite/2),
+                               copyPoint(mitteAussen, 0, -cfgHaus.GaubeWestBreite/2),
+                               copyPoint(mitteAussen, tiefe, -cfgHaus.GaubeWestBreite/2),
+                               copyPoint(mitteAussen, tiefe, cfgHaus.GaubeWestBreite/2)];
       drawPolygon(polyGaubeAussen, cfgHaus.col, 1);
       drawPolygon([middlePoint(polyGaubeAussen[2], polyGaubeAussen[3]), polyGaubeAussen[0]],cfgHaus.col, 0.8);
       drawPolygon([middlePoint(polyGaubeAussen[2], polyGaubeAussen[3]), polyGaubeAussen[1]],cfgHaus.col, 0.8);
@@ -871,10 +871,29 @@ function zeichneAltesHaus() {
       new Point(0, ycoordFromS(6)),
       new Point(0, ycoordFromS(8.7))
     ];
+    const polyAltesHausOhneAnbau = [
+      new Point(11.55, ycoordFromS(8.7)),
+      new Point(11.55, ycoordFromS(0)),
+      new Point(5, ycoordFromS(0)),
+      new Point(5, ycoordFromS(8.7))];
+    // Möglichen Anbau einzeichnen
+    const ol = copyPoint(polyAltesHaus[4], -2.25, -5.8);
+    const polyAnbau = [polyAltesHaus[4],
+                       copyPoint(polyAltesHaus[4], -2.25, 0),
+                       ol,
+                       new Point(polyAltesHaus[0].x, ol.y),
+                       polyAltesHaus[0],
+                       new Point(5, polyAltesHaus[0].y),
+                       polyAltesHaus[3]];
+
     ctx2D.translate(68, -10);
     ctx2D.rotate(-Math.PI / 180 * 2);
     drawPolygon(polyAltesHaus, 'gray', 1);
+    // drawPolygon(polyAnbau, cfgHaus.col, 1, [2,3]);
     setStdTransformState();
+    // console.log('areaPolygon(polyAnbau)=', areaPolygon(polyAnbau));
+    // console.log('areaPolygon(polyAltesHausOhneAnbau)=', areaPolygon(polyAltesHausOhneAnbau));
+
     let x = cfgGrundstueck.AbstBaugrenzeW - 0.24;
 
     bemassung(new Point(x, 7.55), new Point(x, ycoordFromN(0)), 'l', 0);
@@ -888,6 +907,7 @@ function zeichneAltesHaus() {
     let y = cfgGrundstueck.Kastanie.AbstN + cfgGrundstueck.Kastanie.Radius;
     bemassung(new Point(x+0.3, y + 6.41),
               new Point(x, ycoordFromN(y)), 'r', 0);
+
 
   }
 }
@@ -929,3 +949,73 @@ function zeichneAlles() {
   zeichneGrid();
 }
 zeichneAlles();
+// * 3-D Zeichnung
+
+if(false) {
+
+  // ** Hilfsfunktionen 3D
+  function polygon2Shape(polygon) {
+    const shape = new THREE.Shape();
+    shape.moveTo(polygon[0].x, polygon[0].y);
+    for(let k = 1; k<polygon.length; ++k) {
+      shape.lineTo(polygon[k].x, polygon[k].y);
+    }
+    // Polygon schließen:
+    shape.lineTo(polygon[0].x, polygon[0].y);
+
+    return shape;
+  }
+
+  // ** Initialize webGL
+
+  const canvas3DWidth = 1100;
+  const canvas3DHeight = 650;
+  const zFightingOffset = 0.01;
+  const renderer = new THREE.WebGLRenderer({antialias:true});
+  renderer.setSize( canvas3DWidth, canvas3DHeight );  // gleiche Groesse wie 2D-Zeichnung
+  renderer.setClearColor('rgb(225,255,255)');
+  document.body.appendChild( renderer.domElement );
+
+  const scene = new THREE.Scene();
+  const camera = new THREE.PerspectiveCamera(45, canvas3DWidth / canvas3DHeight, 0.1, 100);
+  camera.position.set(50,-10, 10);
+  camera.lookAt(0, -10, 0);
+  camera.up.set(0,0,1);
+  scene.add(camera);
+
+  camera.lookAt(scene.position);
+  // remove in final version:
+  const axHelper = new THREE.AxesHelper(5);
+  // axHelper.material.needsUpdate = true;
+  // axHelper.material.linewidth = 5;
+  scene.add(axHelper);
+
+  // const box = new THREE.Mesh(new THREE.BoxGeometry(4,4,4),
+  //                            new THREE.MeshBasicMaterial({color:'#000000'}));
+  // scene.add(box);
+  const baseMat = new THREE.MeshBasicMaterial({color:'#404040',
+                                               side:THREE.DoubleSide});
+  baseMat.transparent = true;
+  baseMat.opacity=0.5;
+  const basePlane = new THREE.Mesh(new THREE.PlaneGeometry(500, 500),
+                                   baseMat);
+  scene.add(basePlane);
+
+  const grundstueck = new THREE.Mesh(new THREE.ShapeGeometry(polygon2Shape(cfgGrundstueck.Polygon)),
+                                     new THREE.MeshBasicMaterial({color:'#00ff00',
+                                                                  side:THREE.DoubleSide}));
+  grundstueck.position.z = zFightingOffset;
+  grundstueck.rotation.x = Math.PI;
+  scene.add(grundstueck);
+
+  // ** Render loop
+  const controls = new THREE.TrackballControls(camera, renderer.domElement);
+
+  function render() {
+    requestAnimationFrame(render);
+
+    renderer.render(scene, camera);
+    controls.update();
+  }
+  render();
+}
