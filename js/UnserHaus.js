@@ -30,8 +30,6 @@ function cfgGrundstueckDefault() {
   return {
     show: true,
     zeigeMasse: true,
-    zeigeAltesHaus: false,
-    zeigeCarport: false,
     NordSuedLaengeWestseite: 17.20,   // 17.20 hat Herr Knibbe am 21.12.22 als Länge angegeben
     NordSuedLaengeOstseite: 17.20,
     OstWestLaengeNordseite: 30.00,
@@ -84,7 +82,46 @@ function cfgGrundstueckDefault() {
       show: true,
       Breite: 2.6,
       AbstNostseite: 0.3,
-      AbstNwestseite: 1.65
+      AbstNwestseite: 1.65,
+    },
+    Carport: {
+      show: false,
+      get Polygon() {
+        const p1 = new Point(xcoordFromBGO(-12.5), 5);
+        const p2 = new Point(xcoordFromBGO(-14.05), 14);
+        const p3 = copyPoint(p2, -3, 0);
+        const p4 = copyPoint(p1, -3, 0);
+        return [p1, p2, p3, p4];
+      }
+    },
+    AltesHaus: {
+      show: false,
+      get Polygon() {
+        return [
+          new Point(11.55, ycoordFromS(8.7)),
+          new Point(11.55, ycoordFromS(0)),
+          new Point(5, ycoordFromS(0)),
+          new Point(5, ycoordFromS(6)),
+          new Point(0, ycoordFromS(6)),
+          new Point(0, ycoordFromS(8.7))];
+      },
+      get PolygonOhneAnbau() {
+        return [
+          new Point(11.55, ycoordFromS(8.7)),
+          new Point(11.55, ycoordFromS(0)),
+          new Point(5, ycoordFromS(0)),
+          new Point(5, ycoordFromS(8.7))]
+      },
+      get PolygonNeuerAnbau() {
+        const ol = copyPoint(this.Polygon[4], -2.25, -5.8);
+        return [this.Polygon[4],
+                copyPoint(this.Polygon[4], -2.25, 0),
+                ol,
+                new Point(this.Polygon[0].x, ol.y),
+                this.Polygon[0],
+                new Point(5, this.Polygon[0].y),
+                this.Polygon[3]];
+      }
     }
   }
 };
@@ -189,8 +226,8 @@ gui.add(cfgHaus, "show").name("Haus").onChange(v => {
 const guiGrdstck = gui.addFolder("Grundstück");
 guiGrdstck.open(false);
 guiGrdstck.add(cfgGrundstueck.Baufenster, "zeigeMasse").name("Maße Baugrenze").onChange(v => guiSetter(cfgGrundstueck.Baufenster, "zeigeMasse", v));
-guiGrdstck.add(cfgGrundstueck, "zeigeAltesHaus").name("Altes Haus").onChange(v => guiSetter(cfgGrundstueck, "zeigeAltesHaus", v));
-guiGrdstck.add(cfgGrundstueck, "zeigeCarport").name("Carport").onChange(v => guiSetter(cfgGrundstueck, "zeigeCarport", v));
+guiGrdstck.add(cfgGrundstueck.AltesHaus, "show").name("Altes Haus").onChange(v => guiSetter(cfgGrundstueck.AltesHaus, "show", v));
+guiGrdstck.add(cfgGrundstueck.Carport, "show").name("Carport").onChange(v => guiSetter(cfgGrundstueck.Carport, "show", v));
 guiGrdstck.add(cfgGrundstueck.WegAlt, "show").name("Alter Weg").onChange(v => guiSetter(cfgGrundstueck.WegAlt, "show", v));
 
 const guiHaus = gui.addFolder("Haus");
@@ -470,8 +507,8 @@ function drawTree(cfgObj, circ) {
   bemassung(center, new Point(cfgObj.AbstW + circ, cfgObj.AbstN), 't', 0);
 }
 
-function drawBezier(bezStart, bezEnd, bezCp1, bezCp2,
-                    col="black", lineWidth=3, dash=[]){
+function drawBezier(vertexArray, col="black", lineWidth=3, dash=[]){
+  const [bezStart, bezEnd, bezCp1, bezCp2] = vertexArray;
   ctx2D.setLineDash(dash);
   ctx2D.strokeStyle = col;
   ctx2D.lineWidth = lineWidth;
@@ -536,6 +573,53 @@ function berechneGiebelhoehe() {
   return cfgHaus.RaumhoeheEG + cfgHaus.DickeEDdecke + cfgHaus.Kniestock + H + G;
 }
 
+
+
+function datenNeuerWeg() {
+  // Ost-Teil
+  const ret = {};
+  const polyGrdst = cfgGrundstueck.Polygon;
+  const AbstOstteilW = 12;   // Abstand gerade Ostteil von Westgrenze
+  const WegOstNeuObenLinks = new Point(AbstOstteilW, cfgGrundstueck.WegNeu.AbstNostseite);
+  const WegOstNeuObenGanzRechts = copyPoint(WegOstNeuObenLinks, cfgGrundstueck.OstWestLaengeSuedseite);
+  const WegOstNeuObenRechts = berechneSchnittpunkt(WegOstNeuObenLinks, WegOstNeuObenGanzRechts,
+                                                   polyGrdst[1], polyGrdst[2]);
+  const WegOstNeuUntenLinks = copyPoint(WegOstNeuObenLinks, 0, cfgGrundstueck.WegNeu.Breite);
+  const WegOstNeuUntenGanzRechts = copyPoint(WegOstNeuUntenLinks, cfgGrundstueck.OstWestLaengeSuedseite);
+  const WegOstNeuUntenRechts = berechneSchnittpunkt(WegOstNeuUntenLinks, WegOstNeuUntenGanzRechts,
+                                                    polyGrdst[1], polyGrdst[2]);
+
+  // West-Teil
+  const AbstWestteilW = cfgGrundstueck.Kastanie.AbstW + 3;   // Abstand gerader Westteil von Westgrenze
+  const WegWestNeuObenLinks = new Point(0, cfgGrundstueck.WegNeu.AbstNwestseite);
+  const WegWestNeuObenRechts = new Point(AbstWestteilW, cfgGrundstueck.WegNeu.AbstNwestseite);
+  const WegWestNeuUntenLinks = copyPoint(WegWestNeuObenLinks, 0, cfgGrundstueck.WegNeu.Breite);
+  const WegWestNeuUntenRechts = copyPoint(WegWestNeuObenRechts, 0, cfgGrundstueck.WegNeu.Breite);
+
+  // Obere Wegverschwenkung
+  const bezParam1 = 1;
+  const bezParam2 = 2.5;
+  const ostFaktor = 1.5;
+  const bezStartO = copyPoint(WegWestNeuObenRechts, -bezParam1, 0);
+  const bezEndO = copyPoint(WegOstNeuObenLinks, ostFaktor * bezParam1, 0);
+  const bezCp1O = copyPoint(WegWestNeuObenRechts, bezParam2, 0);
+  const bezCp2O = copyPoint(WegOstNeuObenLinks, -ostFaktor * bezParam2, 0);
+  ret.bezO = [bezStartO, bezEndO, bezCp1O, bezCp2O];
+
+  // Untere Wegverschwenkung
+  const bezStartU = copyPoint(WegWestNeuUntenRechts, -bezParam1, 0);
+  const bezEndU = copyPoint(WegOstNeuUntenLinks, ostFaktor * bezParam1, 0);
+  const bezCp1U = copyPoint(WegWestNeuUntenRechts, bezParam2, 0);
+  const bezCp2U = copyPoint(WegOstNeuUntenLinks, -ostFaktor *bezParam2, 0);
+  ret.bezU = [bezStartU, bezEndU, bezCp1U, bezCp2U];
+
+  ret.polyWegOstNeu = [bezEndO, WegOstNeuObenRechts, WegOstNeuUntenRechts, bezEndU];
+
+  ret.polyWegWestNeu = [bezStartU, WegWestNeuUntenLinks, WegWestNeuObenLinks, bezStartO];
+
+  return ret;
+}
+
 // * 2-D Zeichnung
 
 function zeichne2DAchsen() {
@@ -587,61 +671,19 @@ function zeichne2DGrundstueck() {
       }
     }
 
-
-
     // Neuer Weg:
     if(cfgGrundstueck.WegNeu.show) {
 
-      // Ost-Teil
-      const AbstOstteilW = 12;   // Abstand gerade Ostteil von Westgrenze
-      const WegOstNeuObenLinks = new Point(AbstOstteilW, cfgGrundstueck.WegNeu.AbstNostseite);
-      const WegOstNeuObenGanzRechts = copyPoint(WegOstNeuObenLinks, cfgGrundstueck.OstWestLaengeSuedseite);
-      const WegOstNeuObenRechts = berechneSchnittpunkt(WegOstNeuObenLinks, WegOstNeuObenGanzRechts,
-                                                       polyGrdst[1], polyGrdst[2]);
-      const WegOstNeuUntenLinks = copyPoint(WegOstNeuObenLinks, 0, cfgGrundstueck.WegNeu.Breite);
-      const WegOstNeuUntenGanzRechts = copyPoint(WegOstNeuUntenLinks, cfgGrundstueck.OstWestLaengeSuedseite);
-      const WegOstNeuUntenRechts = berechneSchnittpunkt(WegOstNeuUntenLinks, WegOstNeuUntenGanzRechts,
-                                                        polyGrdst[1], polyGrdst[2]);
+      const neuerWeg = datenNeuerWeg();
 
-      // West-Teil
-      const AbstWestteilW = cfgGrundstueck.Kastanie.AbstW + 3;   // Abstand gerader Westteil von Westgrenze
-      const WegWestNeuObenLinks = new Point(0, cfgGrundstueck.WegNeu.AbstNwestseite);
-      const WegWestNeuObenRechts = new Point(AbstWestteilW, cfgGrundstueck.WegNeu.AbstNwestseite);
-      const WegWestNeuUntenLinks = copyPoint(WegWestNeuObenLinks, 0, cfgGrundstueck.WegNeu.Breite);
-      const WegWestNeuUntenRechts = copyPoint(WegWestNeuObenRechts, 0, cfgGrundstueck.WegNeu.Breite);
-
-      // Obere Wegverschwenkung
-      // Obere Wegverschwenkung
-      const bezParam1 = 1;
-      const bezParam2 = 2.5;
-      const ostFaktor = 1.5;
-      const bezStartO = copyPoint(WegWestNeuObenRechts, -bezParam1, 0);
-      const bezEndO = copyPoint(WegOstNeuObenLinks, ostFaktor * bezParam1, 0);
-      const bezCp1O = copyPoint(WegWestNeuObenRechts, bezParam2, 0);
-      const bezCp2O = copyPoint(WegOstNeuObenLinks, -ostFaktor * bezParam2, 0);
-      drawBezier(bezStartO, bezEndO, bezCp1O, bezCp2O, "LightSalmon", 2.0, [2,3]);
-
-
-      // Untere Wegverschwenkung
-      const bezStartU = copyPoint(WegWestNeuUntenRechts, -bezParam1, 0);
-      const bezEndU = copyPoint(WegOstNeuUntenLinks, ostFaktor * bezParam1, 0);
-      const bezCp1U = copyPoint(WegWestNeuUntenRechts, bezParam2, 0);
-      const bezCp2U = copyPoint(WegOstNeuUntenLinks, -ostFaktor *bezParam2, 0);
-      drawBezier(bezStartU, bezEndU, bezCp1U, bezCp2U, "LightSalmon", 2.0, [2,3]);
-
-      const polyWegOstNeu = [bezEndO, WegOstNeuObenRechts, WegOstNeuUntenRechts, bezEndU];
-      drawPolygon(polyWegOstNeu, "LightSalmon", 2.0, [2,3], false);
-      const polyWegWestNeu = [bezStartU, WegWestNeuUntenLinks, WegWestNeuObenLinks, bezStartO];
-      drawPolygon(polyWegWestNeu, "LightSalmon", 2.0, [2,3], false);
-      // Einfache Variante: geknickter Weg
-
-      // drawPolygon([WegWestNeuObenRechts, WegOstNeuObenLinks], "LightSalmon", 2.0, [2,3], false);
-
-
-      // drawPolygon([WegWestNeuUntenRechts, WegOstNeuUntenLinks], "LightSalmon", 2.0, [2,3], false);
-
+      drawBezier(neuerWeg.bezO, "LightSalmon", 2.0, [2,3]);
+      drawBezier(neuerWeg.bezU, "LightSalmon", 2.0, [2,3]);
+      drawPolygon(neuerWeg.polyWegOstNeu, "LightSalmon", 2.0, [2,3], false);
+      drawPolygon(neuerWeg.polyWegWestNeu, "LightSalmon", 2.0, [2,3], false);
 
       if(cfgGrundstueck.zeigeMasse) {
+        const WegWestNeuObenLinks = neuerWeg.polyWegWestNeu[2];
+        const WegWestNeuUntenLinks = neuerWeg.polyWegWestNeu[1];
         bemassung(WegWestNeuObenLinks, WegWestNeuUntenLinks, 'r');
         const pTemp = copyPoint(WegWestNeuObenLinks, 1, 0);
         bemassung(pTemp, copyPoint(pTemp, 0, -cfgGrundstueck.WegNeu.AbstNwestseite), 'r');
@@ -869,41 +911,30 @@ function zeichne2DGrid() {
   }
 }
 
+function datenAltesHaus() {
+  const ret = {};
+
+  ret.polyAltesHaus = cfgGrundstueck.AltesHaus.Polygon;
+
+  ret.polyAltesHausOhneAnbau = cfgGrundstueck.AltesHaus.PolygonOhneAnbau;
+  // Möglichen Anbau einzeichnen
+
+  ret.polyAnbau = cfgGrundstueck.AltesHaus.PolygonNeuerAnbau;
+  return ret;
+}
+
+
 function zeichne2DAltesHaus() {
-  if(cfgGrundstueck.show && cfgGrundstueck.zeigeAltesHaus) {
-    const polyAltesHaus = [
-      new Point(11.55, ycoordFromS(8.7)),
-      new Point(11.55, ycoordFromS(0)),
-      new Point(5, ycoordFromS(0)),
-      new Point(5, ycoordFromS(6)),
-      new Point(0, ycoordFromS(6)),
-      new Point(0, ycoordFromS(8.7))
-    ];
-    const polyAltesHausOhneAnbau = [
-      new Point(11.55, ycoordFromS(8.7)),
-      new Point(11.55, ycoordFromS(0)),
-      new Point(5, ycoordFromS(0)),
-      new Point(5, ycoordFromS(8.7))];
-    // Möglichen Anbau einzeichne2Dn
-    const ol = copyPoint(polyAltesHaus[4], -2.25, -5.8);
-    const polyAnbau = [polyAltesHaus[4],
-                       copyPoint(polyAltesHaus[4], -2.25, 0),
-                       ol,
-                       new Point(polyAltesHaus[0].x, ol.y),
-                       polyAltesHaus[0],
-                       new Point(5, polyAltesHaus[0].y),
-                       polyAltesHaus[3]];
+  if(cfgGrundstueck.show && cfgGrundstueck.AltesHaus.show) {
+    // const altesHaus = datenAltesHaus();
 
     ctx2D.translate(68, -10);
     ctx2D.rotate(-Math.PI / 180 * 2);
-    drawPolygon(polyAltesHaus, 'gray', 1);
-    drawPolygon(polyAnbau, cfgHaus.col, 1, [2,3]);
-    // bemassung(polyAnbau[1], polyAnbau[2], 'l');
-    bemassung(polyAnbau[2], polyAnbau[3], 't');
-    // bemassung(polyAnbau[3], polyAnbau[4], 'r');
+    drawPolygon(cfgGrundstueck.AltesHaus.Polygon, 'gray', 1);
+    // drawPolygon(cfgGrundstueck.AltesHaus.PolygonNeuerAnbau, cfgHaus.col, 1, [2,3]);
     setStdTransformState();
-    console.log('areaPolygon(polyAnbau)=', areaPolygon(polyAnbau));
-    console.log('areaPolygon(polyAltesHausOhneAnbau)=', areaPolygon(polyAltesHausOhneAnbau));
+    // console.log('Fläche neuer Anbau=', areaPolygon(cfgGrundstueck.AltesHaus.PolygonNeuerAnbau));
+    // console.log('Fläche altes Haus ohne Anbau=', areaPolygon(cfgGrundstueck.AltesHaus.PolygonOhneAnbau));
 
     let x = cfgGrundstueck.AbstBaugrenzeW - 0.24;
 
@@ -926,11 +957,12 @@ function zeichne2DAltesHaus() {
 
 function zeichne2DCarport() {
 
-  if(cfgGrundstueck.zeigeCarport) {
-    const p1 = new Point(xcoordFromBGO(-12.5), 5);
-    const p2 = new Point(xcoordFromBGO(-14.05), 14);
-    const p3 = copyPoint(p2, -3, 0);
-    const p4 = copyPoint(p1, -3, 0);
+  if(cfgGrundstueck.Carport.show) {
+    const [p1, p2, p3, p4] = cfgGrundstueck.Carport.Polygon;
+    // const p1 = new Point(xcoordFromBGO(-12.5), 5);
+    // const p2 = new Point(xcoordFromBGO(-14.05), 14);
+    // const p3 = copyPoint(p2, -3, 0);
+    // const p4 = copyPoint(p1, -3, 0);
     drawPolygon([p1, p2, p3, p4], "black", 1);
     // Bemassung nach rechts:
     const polyGrdst = cfgGrundstueck.Polygon;
@@ -942,9 +974,6 @@ function zeichne2DCarport() {
     bemassung(p4, new Point(xcoordFromBGO(0), p4.y), 't', 0);
     bemassung(p3, new Point(xcoordFromBGO(0), p3.y), 't', 0);
   }
-
-
-
 
 }
 
@@ -1003,7 +1032,7 @@ camera.lookAt(scene.position);
 const axHelper = new THREE.AxesHelper(5);
 scene.add(axHelper);
 
-
+// Der Rest der Welt:
 const basePlane3D = new THREE.Mesh(new THREE.PlaneGeometry(500, 500),
                                    new THREE.MeshBasicMaterial({color:'#404040',
                                                                 side:THREE.DoubleSide}));
@@ -1011,9 +1040,11 @@ basePlane3D.material.transparent = true;
 basePlane3D.material.opacity=0.5;
 scene.add(basePlane3D);
 
+// Container für Grundstück und Haus
 const WW603D = new THREE.Object3D();
 scene.add(WW603D);
 
+// ** Grundstück
 function zeichne3DGrundstueck() {
   const Grundstueck = new THREE.Object3D();
   const Grundstuecksflaeche = new THREE.Mesh(new THREE.ShapeGeometry(polygon2Shape(cfgGrundstueck.Polygon)),
@@ -1030,7 +1061,76 @@ function zeichne3DGrundstueck() {
   Baufenster.material.transparent = true;
   Baufenster.material.opacity = 0.2;
   Grundstueck.add(Baufenster);
+
+  const nwDaten = datenNeuerWeg();
+  const wegShape = new THREE.Shape();
+  wegShape.moveTo(nwDaten.polyWegWestNeu[0].x, nwDaten.polyWegWestNeu[0].y);
+  wegShape.lineTo(nwDaten.polyWegWestNeu[1].x, nwDaten.polyWegWestNeu[1].y);
+  wegShape.lineTo(nwDaten.polyWegWestNeu[2].x, nwDaten.polyWegWestNeu[2].y);
+  wegShape.lineTo(nwDaten.polyWegWestNeu[3].x, nwDaten.polyWegWestNeu[3].y);
+  // wegShape.lineTo(nwDaten.polyWegWestNeu[0].x, nwDaten.polyWegWestNeu[0].y);
+  wegShape.bezierCurveTo(nwDaten.bezO[2].x, nwDaten.bezO[2].y,
+                         nwDaten.bezO[3].x, nwDaten.bezO[3].y,
+                         nwDaten.bezO[1].x, nwDaten.bezO[1].y);
+  wegShape.lineTo(nwDaten.polyWegOstNeu[1].x, nwDaten.polyWegOstNeu[1].y);
+  wegShape.lineTo(nwDaten.polyWegOstNeu[2].x, nwDaten.polyWegOstNeu[2].y);
+  wegShape.lineTo(nwDaten.polyWegOstNeu[3].x, nwDaten.polyWegOstNeu[3].y);
+
+  wegShape.bezierCurveTo(nwDaten.bezU[3].x, nwDaten.bezU[3].y,
+                         nwDaten.bezU[2].x, nwDaten.bezU[2].y,
+                         nwDaten.bezU[0].x, nwDaten.bezU[0].y);
+  wegShape.lineTo(nwDaten.polyWegWestNeu[0].x, nwDaten.polyWegWestNeu[0].y);
+
+  const NeuerWeg = new THREE.Mesh(new THREE.ShapeGeometry(wegShape),
+                                  new THREE.MeshBasicMaterial({color:'brown',
+                                                               side:THREE.DoubleSide}));
+  NeuerWeg.material.transparent = true;
+  NeuerWeg.material.opacity = 0.7;
+  NeuerWeg.position.z = 2*zFightingOffset;
+  Grundstueck.add(NeuerWeg);
+
+
+  // Die Kastanie
+  const kastRad = cfgGrundstueck.Kastanie.Radius;
+  const kastHeight = 10*kastRad;
+  const Kastantie = new THREE.Mesh(new THREE.CylinderGeometry(kastRad, kastRad, kastHeight, 32),
+                                   new THREE.MeshBasicMaterial({color:'saddlebrown'}));
+  Kastantie.rotation.x=Math.PI/2;
+  Kastantie.position.z = -1/2*kastHeight;
+  Kastantie.position.x = cfgGrundstueck.Kastanie.AbstW;
+  Kastantie.position.y = cfgGrundstueck.Kastanie.AbstN;
+  Grundstueck.add(Kastantie);
+
+  const ahGeo = new THREE.ExtrudeGeometry(polygon2Shape(cfgGrundstueck.AltesHaus.Polygon), {
+	  steps: 2,
+	  depth: -3,
+	  bevelEnabled: false});
+  const ahMat = new THREE.MeshBasicMaterial({color:'gray', side:THREE.DoubleSide});
+
+  const AltesHaus = new THREE.Mesh(ahGeo, ahMat);
+  AltesHaus.name = "AltesHaus";
+
+  // FIXME: Diese Daten sind nur ungefaehr: die muessten mit der 2D - Zeichung synchronisiert werden
+  AltesHaus.position.x = 4.9;
+  AltesHaus.position.y = -0.8;
+  AltesHaus.rotation.z = - Math.PI/180*2;
+  Grundstueck.add(AltesHaus);
+
+
+  const cpGeo = new THREE.ExtrudeGeometry(polygon2Shape(cfgGrundstueck.Carport.Polygon), {
+	  steps: 2,
+	  depth: -3,
+	  bevelEnabled: false});
+  const cpMat = new THREE.MeshBasicMaterial({color:'gray',side:THREE.DoubleSide});
+
+  const Carport = new THREE.Mesh(cpGeo, cpMat);
+  Carport.name = "Carport";
+  Grundstueck.add(Carport);
+
+
+
   return Grundstueck;
+
 }
 
 const Grundstueck3D = zeichne3DGrundstueck();
@@ -1046,6 +1146,8 @@ function render() {
   axHelper.visible = cfg.zeigeAchsen;
   Grundstueck3D.children.forEach(c=>c.visible = cfgGrundstueck.show);
   // Baufenster.visible = cfgGrundstueck.show && cfgGrundstueck.Baufenster.show;
+  Grundstueck3D.getObjectByName("AltesHaus").visible = cfgGrundstueck.AltesHaus.show;
+  Grundstueck3D.getObjectByName("Carport").visible = cfgGrundstueck.Carport.show;
 
   renderer.render(scene, camera);
   controls.update();
