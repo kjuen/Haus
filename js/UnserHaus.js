@@ -1012,16 +1012,21 @@ function polygon2Shape(polygon) {
 
 // ** Initialize webGL
 
-const canvas3DWidth = 1100;
-const canvas3DHeight = 650;
+
 const zFightingOffset = -0.01;
-const renderer = new THREE.WebGLRenderer({antialias:true});
-renderer.setSize( canvas3DWidth, canvas3DHeight );  // gleiche Groesse wie 2D-Zeichnung
+
+
+// const canvas3DWidth = 1100;
+// const canvas3DHeight = 650;
+
+const canvas3D = document.getElementById("canvas3D");
+const renderer = new THREE.WebGLRenderer({canvas:canvas3D, antialias:true});
+// renderer.setSize( canvas3DWidth, canvas3DHeight );  // gleiche Groesse wie 2D-Zeichnung
 renderer.setClearColor('rgb(225,255,255)');
-document.body.appendChild( renderer.domElement );
+// document.body.appendChild( renderer.domElement );
 
 const scene = new THREE.Scene();
-const camera = new THREE.PerspectiveCamera(45, canvas3DWidth / canvas3DHeight, 0.1, 200);
+const camera = new THREE.PerspectiveCamera(45, canvas3D.width / canvas3D.height, 0.1, 200);
 camera.position.set(50,10, -10);
 camera.lookAt(0, -10, 0);
 camera.up.set(0,0,-1);
