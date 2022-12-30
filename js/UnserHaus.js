@@ -65,9 +65,9 @@ function cfgGrundstueckDefault() {
     OstWestLaengeSuedseite: 33.00,
     get Polygon() {
       return [new Point(0, 0),
-              new Point(this.OstWestLaengeNordseite, 0),
-              new Point(this.OstWestLaengeSuedseite, this.NordSuedLaengeWestseite),
-              new Point(0, this.NordSuedLaengeOstseite)];
+      new Point(this.OstWestLaengeNordseite, 0),
+      new Point(this.OstWestLaengeSuedseite, this.NordSuedLaengeWestseite),
+      new Point(0, this.NordSuedLaengeOstseite)];
     },
     // AbstBaugrenzeW: 16.86,   // sagt Herr Knibbe
     AbstBaugrenzeW: 17.00,     // 17.02 hat Herr Knibbe am 21.12.22 als Länge angegeben
@@ -84,11 +84,11 @@ function cfgGrundstueckDefault() {
       // 5---------------4
       get Polygon() {
         return [new Point(xcoordFromW(this.GrenzAbstand), ycoordFromS(this.GrenzAbstand + 10.0)),  // 0
-                new Point(xcoordFromBGO(6), ycoordFromS(this.GrenzAbstand + 10.0)),                // 1
-                new Point(xcoordFromBGO(6), ycoordFromS(this.GrenzAbstand + 10.0+1)),               // 2
-                new Point(xcoordFromBGO(0), ycoordFromS(this.GrenzAbstand + 10.0+1)),               // 3
-                new Point(xcoordFromBGO(0), ycoordFromS(this.GrenzAbstand)),                      // 4
-                new Point(xcoordFromW(this.GrenzAbstand), ycoordFromS(this.GrenzAbstand))];       // 5
+        new Point(xcoordFromBGO(6), ycoordFromS(this.GrenzAbstand + 10.0)),                // 1
+        new Point(xcoordFromBGO(6), ycoordFromS(this.GrenzAbstand + 10.0 + 1)),               // 2
+        new Point(xcoordFromBGO(0), ycoordFromS(this.GrenzAbstand + 10.0 + 1)),               // 3
+        new Point(xcoordFromBGO(0), ycoordFromS(this.GrenzAbstand)),                      // 4
+        new Point(xcoordFromW(this.GrenzAbstand), ycoordFromS(this.GrenzAbstand))];       // 5
       }
     },
     showBaeume: true,
@@ -139,20 +139,20 @@ function cfgGrundstueckDefault() {
           new Point(11.55, ycoordFromS(8.7)),
           new Point(11.55, ycoordFromS(0)),
           new Point(5, ycoordFromS(0)),
-          new Point(5, ycoordFromS(8.7))]
+          new Point(5, ycoordFromS(8.7))];
       },
       get PolygonNeuerAnbau() {
         const ol = copyPoint(this.Polygon[4], -2.25, -5.8);
         return [this.Polygon[4],
-                copyPoint(this.Polygon[4], -2.25, 0),
-                ol,
-                new Point(this.Polygon[0].x, ol.y),
-                this.Polygon[0],
-                new Point(5, this.Polygon[0].y),
-                this.Polygon[3]];
+        copyPoint(this.Polygon[4], -2.25, 0),
+          ol,
+        new Point(this.Polygon[0].x, ol.y),
+        this.Polygon[0],
+        new Point(5, this.Polygon[0].y),
+        this.Polygon[3]];
       }
     }
-  }
+  };
 };
 
 
@@ -353,9 +353,7 @@ function Point(x, y) {
   // this.px = drawEnv2D.offsetX + drawEnv2D.scale * x;
   // this.py = drawEnv2D.offsetY + drawEnv2D.scale * y;
 }
-function copyPoint(p, xOffset=0, yOffset=0) {
-  return new Point(p.x+xOffset, p.y+yOffset);
-}
+
 Object.defineProperty(Point.prototype, "px", {
   get: function ppx() {
     return drawEnv2D.offsetX + drawEnv2D.scale * this.x;
@@ -484,7 +482,7 @@ function distBetweenPoints(p1, p2) {
 }
 
 function pointInbetween(p1, p2, r) {
-  return new Point( p1.x + r * (p2.x - p1.x), (p1.y + r * (p2.y - p1.y)))
+  return new Point(p1.x + r * (p2.x - p1.x), (p1.y + r * (p2.y - p1.y)));
 }
 
 const middlePoint = (p1, p2) => pointInbetween(p1, p2, 0.5);
@@ -903,7 +901,7 @@ function zeichne2DHaus() {
     const giebelUnten = middlePoint(polyAussen[5], polyAussen[6]);
     const giebelOben = new Point(giebelUnten.x, polyAussen[4].y);
     drawPolygon([giebelOben, giebelUnten],
-                cfgHaus.col, 0.2)
+      cfgHaus.col, 0.2);
   }
 
 
@@ -938,9 +936,9 @@ function zeichne2DHaus() {
 
   if(cfgGrundstueck.zeigeHaus && cfgHaus.zeigeVeranda) {
     const ol = pointInbetween(polyAussen[4], polyAussen[5], 1/3);
-    const or = new Point(ol.x+1.5, ol.y)
+    const or = new Point(ol.x + 1.5, ol.y);
     const ul = pointInbetween(polyAussen[4], polyAussen[5], 2/3);
-    const ur = new Point(ul.x+1.5, ul.y)
+    const ur = new Point(ul.x + 1.5, ul.y);
     drawPolygon([ol, or, ur, ul], cfgHaus.col, 0.75);
     if(cfgHaus.zeigeAussenMasse) {
       bemassung(ol, or, 't');
@@ -1063,7 +1061,7 @@ function zeichne2DAltesHaus() {
 
     // console.log('Fläche neuer Anbau=', areaPolygon(cfgGrundstueck.AltesHaus.PolygonNeuerAnbau));
     // console.log('Fläche altes Haus ohne Anbau=', areaPolygon(cfgGrundstueck.AltesHaus.PolygonOhneAnbau));
-    const polyOhneAnbau = cfgGrundstueck.AltesHaus.PolygonOhneAnbau
+    const polyOhneAnbau = cfgGrundstueck.AltesHaus.PolygonOhneAnbau;
     const flOhneAnbau = areaPolygon(polyOhneAnbau);
     const comOhneAnbau = comPolygon(polyOhneAnbau);
     drawEnv2D.ctx2D.fillStyle = "gray";
@@ -1155,7 +1153,6 @@ function zeichneSeitenansichten() {
   drawEnv2D.setStdTransformState();
   drawEnv2D.ctx2D.clearRect(0,0, drawEnv2D.canvas.width, drawEnv2D.canvas.height);
   if(detSeitenansichten.open) {
-    console.log("Seitenansichten");
     zeichneSuedGiebel();
     zeichne2DGrid();
     zeichne2DAchsen();
