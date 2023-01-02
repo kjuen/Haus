@@ -9,7 +9,7 @@ console.log('Hier wird unser Haus gebaut');
 // * Konfiguration
 
 const Debug = {
-  zeigeAchsen: true
+  zeigeAchsen: false
 };
 
 let drawEnv2D;
@@ -59,6 +59,8 @@ function cfgGrundstueckDefault() {
     zeigeMasse: true,
     zeigeHaus: true,
     zeigeGitter: true,
+    zeigeBaeume: true,
+
     NordSuedLaengeWestseite: 17.20,   // 17.20 hat Herr Knibbe am 21.12.22 als Länge angegeben
     NordSuedLaengeOstseite: 17.20,
     OstWestLaengeNordseite: 30.00,
@@ -91,7 +93,6 @@ function cfgGrundstueckDefault() {
         new Point(xcoordFromW(this.GrenzAbstand), ycoordFromS(this.GrenzAbstand))];       // 5
       }
     },
-    showBaeume: true,
     Kastanie: {
       Radius: 0.59,
       AbstN: 0.59 + 0.4,
@@ -318,6 +319,7 @@ guiGrdstck.add(cfgGrundstueck.Baufenster, "zeigeMasse").name("Maße Baufenster")
 guiGrdstck.add(cfgGrundstueck.AltesHaus, "show").name("Altes Haus").onChange(v => guiSetter(cfgGrundstueck.AltesHaus, "show", v));
 guiGrdstck.add(cfgGrundstueck.Carport, "show").name("Carport").onChange(v => guiSetter(cfgGrundstueck.Carport, "show", v));
 guiGrdstck.add(cfgGrundstueck.WegAlt, "show").name("Alter Weg").onChange(v => guiSetter(cfgGrundstueck.WegAlt, "show", v));
+guiGrdstck.add(cfgGrundstueck, "zeigeBaeume").name("Bäume").onChange(v => guiSetter(cfgGrundstueck, "zeigeBaeume", v));
 guiGrdstck.add(cfgGrundstueck, "zeigeGitter").name("Gitter").onChange(v => guiSetter(cfgGrundstueck, "zeigeGitter", v));
 
 
@@ -826,7 +828,7 @@ function zeichne2DGrundstueck() {
     bemassung(polyGrdst[0], polyGrdst[3], 'l');
   }
 
-  if (cfgGrundstueck.showBaeume) {
+  if (cfgGrundstueck.zeigeBaeume) {
     drawTree(cfgGrundstueck.Kastanie, 4.25);
     drawTree(cfgGrundstueck.Eiche, 4.25);
   }
@@ -850,10 +852,12 @@ function zeichne2DGrundstueck() {
 
     const neuerWeg = datenNeuerWeg();
 
-    drawBezier(neuerWeg.bezO, "LightSalmon", 2.0, [2,3]);
-    drawBezier(neuerWeg.bezU, "LightSalmon", 2.0, [2,3]);
-    drawPolygon(neuerWeg.polyWegOstNeu, "LightSalmon", 2.0, [2,3], false);
-    drawPolygon(neuerWeg.polyWegWestNeu, "LightSalmon", 2.0, [2,3], false);
+    const wegCol = "blue";
+    const wegLs = 1.0;
+    drawBezier(neuerWeg.bezO, wegCol, wegLs, [2,3]);
+    drawBezier(neuerWeg.bezU, wegCol, wegLs, [2,3]);
+    drawPolygon(neuerWeg.polyWegOstNeu, wegCol, wegLs, [2,3], false);
+    drawPolygon(neuerWeg.polyWegWestNeu, wegCol, wegLs, [2,3], false);
 
     if(cfgGrundstueck.zeigeMasse) {
       const WegWestNeuObenLinks = neuerWeg.polyWegWestNeu[2];
@@ -886,7 +890,9 @@ function zeichne2DGrundstueck() {
       const kastanieSued = new Point(xcoordFromW(cfgGrundstueck.Kastanie.AbstW),
                                      ycoordFromN(cfgGrundstueck.Kastanie.AbstN + cfgGrundstueck.Kastanie.Radius));
       const tmpPoint = new Point(kastanieSued.x, polyBF[0].y);
-      bemassung(tmpPoint, kastanieSued, 'r', 0);
+      if(cfgGrundstueck.zeigeBaeume) {
+        bemassung(tmpPoint, kastanieSued, 'r', 0);
+      }
     }
   }
 }
@@ -928,10 +934,12 @@ function zeichne2DHaus() {
     bemassung(mp67, new Point(xcoordFromW(0), mp67.y), 't');
     const mp34 = middlePoint(polyAussen[3], polyAussen[4]);
     bemassung(mp34, new Point(mp34.x, ycoordFromN(0)), 'r');
-    const kastanieSued = new Point(xcoordFromW(cfgGrundstueck.Kastanie.AbstW),
-                                   ycoordFromN(cfgGrundstueck.Kastanie.AbstN + cfgGrundstueck.Kastanie.Radius));
-    const tmpPoint = new Point(kastanieSued.x, polyAussen[0].y);
-    bemassung(tmpPoint, kastanieSued, 'r', 0);
+    if(cfgGrundstueck.zeigeBaeume) {
+      const kastanieSued = new Point(xcoordFromW(cfgGrundstueck.Kastanie.AbstW),
+                                     ycoordFromN(cfgGrundstueck.Kastanie.AbstN + cfgGrundstueck.Kastanie.Radius));
+      const tmpPoint = new Point(kastanieSued.x, polyAussen[0].y);
+      bemassung(tmpPoint, kastanieSued, 'r', 0);
+    }
   }
 
   if(cfgGrundstueck.zeigeHaus && cfgHaus.zeigeVeranda) {
