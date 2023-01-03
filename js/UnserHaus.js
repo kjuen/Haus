@@ -2,7 +2,6 @@
 
 // TODO:
 // - Innenraum Anbau flexibler machen: Puhh, schwierig!
-// - PolygonSuedGiebel fertig bauen
 
 console.log('Hier wird unser Haus gebaut');
 
@@ -44,12 +43,20 @@ function drawEnv2DSeitenansichten() {
       ctx.lineCap = "round";
       return ctx;
     },
-    scale: 35,
-    offsetX: 35,
-    offsetY: 35,
+    ctxScale: 2.0,    // wenn das höher gesetzt wird, wird alles unscharf!
+    scale: 30,   // Anzahl Pixel fuer 1 m Laenge
+    // Der Koordinaten-Ursprung soll in der Mitte unten sein für die Seitenansichten
+    get offsetX() {
+      const n = Math.floor(this.canvas.width / (2 * this.ctxScale*this.scale));
+      return n * this.scale;
+    },
+    get offsetY() {
+      const n = Math.floor(this.canvas.height / (this.ctxScale*this.scale)) -1;
+      return n * this.scale;
+    },
     setStdTransformState() {
       this.ctx2D.resetTransform();
-      this.ctx2D.scale(2.0,2.0);
+      this.ctx2D.scale(this.ctxScale,this.ctxScale);
     }
   };
 };
@@ -178,6 +185,7 @@ function cfgHausDefault() {
     AnbauLaengeNS: 5.70,
     DickeAussenwand: 0.4,
     DickeInnenwand: 0.2,
+    DickeInnenwand: 0.2,
     // Punkt 1 ist doch überflüssig!
     //          3-------4
     //          |       |
@@ -249,25 +257,33 @@ function cfgHausDefault() {
       return polyAnbauInnen;
     },
     get PolygonSuedGiebel() {
+      // FIXME: Obersten Punkt richtig berechnen
+
+      const distOGGiebelspitze = this.HausLaengeOW/2 * Math.tan(this.Dachneigung * Math.PI/180);
+
       const poly = [
         new Point(0,0),
         new Point(this.HausLaengeOW, 0),
         new Point(this.HausLaengeOW, this.RaumhoeheEG),
         new Point(this.HausLaengeOW, this.RaumhoeheEG + this.DickeEDdecke),
         new Point(this.HausLaengeOW, this.RaumhoeheEG + this.DickeEDdecke+this.Kniestock),
-        new Point(this.HausLaengeOW/2, this.RaumhoeheEG + this.DickeEDdecke+this.Kniestock+2),
-        new Point(0, this.RaumhoeheEG + this.DickeEDdecke+this.Kniestock)
+        new Point(this.HausLaengeOW/2, this.RaumhoeheEG + this.DickeEDdecke+this.Kniestock+distOGGiebelspitze),
+        new Point(0, this.RaumhoeheEG + this.DickeEDdecke+this.Kniestock),
+        new Point(0, this.RaumhoeheEG + this.DickeEDdecke),
+        new Point(0, this.RaumhoeheEG)
       ];
       return poly;
     },
 
     // wird fuer die Berechnung der Wfl im OG gebrauch
     DickeDach: 0.35,
-    DickeEDdecke: 0.35,
+    DickeEGdecke: 0.35,
+    DickeOGdecke: 0.35,
     RaumhoeheEG: 2.4,
     RaumhoeheOG: 2.4,
     Kniestock: 1.5,
     Dachneigung: 38, // Grad
+    Dachueberstand: 0.5,
     GaubeOstBreite: 3.3,   // etwa die Verandabreite
     GaubeWestBreite: 3.3   // etwa die Verandabreite
   };
@@ -296,6 +312,7 @@ const gui = new lil.GUI({title: "Einstellungen"});
 const guiHaus = gui.addFolder("Haus");
 guiHaus.open(false);
 guiHaus.add(cfgHaus, "zeigeAussenMasse").name("Außenmaße").onChange(v => guiSetter(cfgHaus, "zeigeAussenMasse", v));
+guiHaus.add(cfgHaus, "zeigeVeranda").name("Veranda").onChange(v => guiSetter(cfgHaus, "zeigeVeranda", v));
 guiHaus.add(cfgHaus, "AnbauAbstW", -1, 2, 0.05).name("Anbau Abstand West").onChange(v => guiSetter(cfgHaus, "AnbauAbstW", v));
 guiHaus.add(cfgHaus, "AnbauAbstS", -3, 6, 0.05).name("Anbau Abstand Süd").onChange(v => guiSetter(cfgHaus, "AnbauAbstS", v));
 guiHaus.add(cfgHaus, "AnbauLaengeNS", 3, 10, 0.05).name("Anbau Länge Nord Süd").onChange(v => guiSetter(cfgHaus, "AnbauLaengeNS", v));
@@ -305,11 +322,12 @@ guiHaus.add(cfgHaus, "HausLaengeOW", 5, 10, 0.05).name("Haus Länge Ost West").o
 guiHaus.add(cfgHaus, "OffsetOW", 0, 6, 0.05).name("Ecke Länge Ost West").onChange(v => guiSetter(cfgHaus, "OffsetOW", v));
 guiHaus.add(cfgHaus, "OffsetNS", 0, 3, 0.05).name("Ecke Länge Nord Süd").onChange(v => guiSetter(cfgHaus, "OffsetNS", v));
 
-guiHaus.add(cfgHaus, "Kniestock", 0.5, 2.5, 0.05).name("Kniestock").onChange(v => guiSetter(cfgHaus, "Kniestock", v));
-guiHaus.add(cfgHaus, "Dachneigung", 23, 45, 1).name("Dachneigung").onChange(v => guiSetter(cfgHaus, "Dachneigung", v));
-guiHaus.add(cfgHaus, "GaubeWestBreite", 0, 5, 0.1).name("Breite Gaube West").onChange(v => guiSetter(cfgHaus, "GaubeWestBreite", v));
-guiHaus.add(cfgHaus, "GaubeOstBreite", 0, 5, 0.1).name("Breite Gaube Ost").onChange(v => guiSetter(cfgHaus, "GaubeOstBreite", v));
-guiHaus.add(cfgHaus, "zeigeVeranda").name("Veranda").onChange(v => guiSetter(cfgHaus, "zeigeVeranda", v));
+const guiDach = guiHaus.addFolder("OG und Dach");
+guiDach.close();
+guiDach.add(cfgHaus, "Kniestock", 0.5, 2.5, 0.05).name("Kniestock").onChange(v => guiSetter(cfgHaus, "Kniestock", v));
+guiDach.add(cfgHaus, "Dachneigung", 23, 45, 1).name("Dachneigung").onChange(v => guiSetter(cfgHaus, "Dachneigung", v));
+guiDach.add(cfgHaus, "GaubeWestBreite", 0, 5, 0.1).name("Breite Gaube West").onChange(v => guiSetter(cfgHaus, "GaubeWestBreite", v));
+guiDach.add(cfgHaus, "GaubeOstBreite", 0, 5, 0.1).name("Breite Gaube Ost").onChange(v => guiSetter(cfgHaus, "GaubeOstBreite", v));
 // cfgHaus.show ? guiHaus.show() : guiHaus.hide();
 
 const guiGrdstck = gui.addFolder("Grundstück");
@@ -525,14 +543,24 @@ function bemassung(p1, p2, pos='t', offset=0.3) {
     px1 -= offset;
     px2 -= offset;
     mpx -= 1.5*offset;
-    mpy += txtWidth/2;
-    angle = -90;
+    if(dist>0.5) {
+      angle = -90;
+      mpy += txtWidth/2;
+    } else {
+      mpy += txtHeight/2;
+      angle = 0;
+    }
   } else if(pos==='r') {
     px1 += offset;
     px2 += offset;
     mpx += 1.5*offset;
-    mpy -= txtWidth/2;
-    angle = 90;
+    if(dist>0.5) {
+      angle = 90;
+      mpy -= txtWidth/2;
+    } else {
+      mpy += txtHeight/2;
+      angle = 0;
+    }
   } else {
     throw "pos must be t, b, l, r";
   }
@@ -648,7 +676,7 @@ function berechneGiebelhoehe() {
   const B = cfgHaus.HausLaengeOW - 2 * cfgHaus.DickeAussenwand;
   const H = B / 2 * Math.tan(Math.PI / 180 * cfgHaus.Dachneigung);
   const G = cfgHaus.DickeDach / Math.cos(Math.PI / 180 * cfgHaus.Dachneigung);
-  return cfgHaus.RaumhoeheEG + cfgHaus.DickeEDdecke + cfgHaus.Kniestock + H + G;
+  return cfgHaus.RaumhoeheEG + cfgHaus.DickeEGdecke + cfgHaus.Kniestock + H + G;
 }
 
 
@@ -711,6 +739,43 @@ function datenAlterWeg() {
                                                  polyGrdst[1], polyGrdst[2]);
   const polyWegAlt = [WegAltObenLinks, WegAltObenRechts, WegAltUntenRechts, WegAltUntenLinks];
   return polyWegAlt;
+}
+
+
+function polyDachQuerschnitt(dicke, dachneigung,
+                             halbeBreite) {
+  const alpha = dachneigung * Math.PI/180;
+
+  const l = dicke / Math.sin(alpha);
+  const h1 = (halbeBreite -  l) * Math.tan(alpha);
+  const h2 = halbeBreite  * Math.tan(alpha);
+
+  const poly = [new Point(halbeBreite, 0),
+                new Point(0, h2),
+                new Point(-halbeBreite, 0),
+                new Point(-halbeBreite + l, 0),
+                new Point(0, h1),
+                new Point(halbeBreite-l, 0)];
+
+  return poly;
+}
+
+function rechterWandQuerschnitt(b, k, alpha, l, hEG, d) {
+  l = l<0 ? 0 : l;
+  l = l>b ? b : l;
+
+  const k1 = b * Math.tan(alpha * Math.PI/180);
+  const k2 = l * Math.tan(alpha * Math.PI/180);
+
+  return [new Point(b, 0),
+          new Point(b, hEG),
+          new Point(b, hEG+d),
+          new Point(b, hEG+d+k-k1+k2),
+          new Point(b-l, hEG+d+k-k1+k2),
+          new Point(0, hEG+d+k),
+          new Point(0, hEG+d),
+          new Point(0, hEG),
+          new Point(0, 0)];
 }
 
 // * Tabelle mit Daten
@@ -1150,9 +1215,69 @@ function zeichneGrundstuecksPlan() {
 // * Seitenansichten
 
 function zeichneSuedGiebel() {
-  const offsetY = 7;
-  const poly = cfgHaus.PolygonSuedGiebel.map(p=>new Point(p.x, offsetY-p.y));
-  drawPolygon(poly);
+
+  // const offsetX = Math.ceil(cfgHaus.HausLaengeOW/2) +1;
+  const yMirror =  p=>new Point(p.x, -p.y);
+  // const poly = cfgHaus.PolygonSuedGiebel.map(yMirror);
+  const polyDach = polyDachQuerschnitt(cfgHaus.DickeDach, cfgHaus.Dachneigung,
+                                       cfgHaus.HausLaengeOW/2 + cfgHaus.Dachueberstand)
+        .map(p=>new Point(p.x, -p.y));
+  const l = polyDach[0].x - polyDach[5].x - cfgHaus.Dachueberstand;
+  const polyRechteSeite = rechterWandQuerschnitt(cfgHaus.DickeAussenwand,
+                                                 cfgHaus.Kniestock,
+                                                 cfgHaus.Dachneigung,
+                                                 l,
+                                                 cfgHaus.RaumhoeheEG,
+                                                 cfgHaus.DickeEGdecke)
+        .map(yMirror).map(p=>copyPoint(p, cfgHaus.HausLaengeInnenOW/2,0));
+  const polyLinkeSeite = polyRechteSeite.map(p=>new Point(-p.x, p.y));
+
+  drawPolygon(polyRechteSeite, "black", 1.5);
+  drawPolygon(polyLinkeSeite, "black", 1.5);
+  drawPolygon([polyLinkeSeite[8], polyRechteSeite[8]], "black", 1.5);
+  bemassung(polyLinkeSeite[8], polyRechteSeite[8], "b",0.1);
+  // Decke EG:
+  drawPolygon([polyLinkeSeite[7], polyRechteSeite[7]], "black", 0.2);
+  drawPolygon([polyLinkeSeite[6], polyRechteSeite[6]], "black", 0.2);
+  bemassung(new Point(1, polyLinkeSeite[8].y),  new Point(1, polyLinkeSeite[7].y), 'r', 0.1);
+  bemassung(new Point(1, polyLinkeSeite[7].y), new Point(1, polyLinkeSeite[6].y), 'r', 0.1);
+  bemassung(polyLinkeSeite[6], polyLinkeSeite[5], "r", 0.1);
+
+  // Positionierung des Dachs
+  let dachOffsetY = 0;
+  if(l>0) {
+    // In diesem Fall liegt das Dach mit der Unterseite auf einem Teil der Mauer
+    dachOffsetY = polyLinkeSeite[3].y;
+  } else {
+    dachOffsetY = polyLinkeSeite[5].y + (cfgHaus.DickeAussenwand - l) * Math.tan(Math.PI/180*cfgHaus.Dachneigung);
+  }
+  polyDach.forEach(p=>p.y += dachOffsetY);
+
+  drawPolygon(polyDach, "black", 1.5);
+  // Decke OG
+  const tmpPoint1 = new Point(-2*cfgHaus.HausLaengeOW,
+                              -(cfgHaus.RaumhoeheEG + cfgHaus.DickeEGdecke + cfgHaus.RaumhoeheOG));
+  const tmpPoint2 = copyPoint(tmpPoint1, 4*cfgHaus.HausLaengeOW, 0);
+  let sp1 = berechneSchnittpunkt(tmpPoint1, tmpPoint2, polyDach[4], polyDach[3]);
+  let sp2 = berechneSchnittpunkt(tmpPoint1, tmpPoint2, polyDach[4], polyDach[5]);
+  drawPolygon([sp1, sp2], "black", 0.2);
+  bemassung(sp1, sp2, 'b', 0.1);
+
+  bemassung(new Point(1, -(cfgHaus.RaumhoeheEG + cfgHaus.DickeEGdecke)),
+            new Point(1, -(cfgHaus.RaumhoeheEG + cfgHaus.DickeEGdecke + cfgHaus.RaumhoeheOG)), 'r', 0.1);
+  tmpPoint1.y -= cfgHaus.DickeOGdecke;
+  tmpPoint2.y -= cfgHaus.DickeOGdecke;
+  sp1 = berechneSchnittpunkt(tmpPoint1, tmpPoint2, polyDach[4], polyDach[3]);
+  sp2 = berechneSchnittpunkt(tmpPoint1, tmpPoint2, polyDach[4], polyDach[5]);
+  drawPolygon([sp1, sp2], "black", 0.2);
+  bemassung(new Point(1, -(cfgHaus.RaumhoeheEG + cfgHaus.DickeEGdecke + cfgHaus.RaumhoeheOG)),
+            new Point(1, -(cfgHaus.RaumhoeheEG + cfgHaus.DickeEGdecke + cfgHaus.RaumhoeheOG + cfgHaus.DickeOGdecke)), 'r', 0.1);
+  bemassung(polyDach[4],
+            new Point(0, -(cfgHaus.RaumhoeheEG + cfgHaus.DickeEGdecke + cfgHaus.RaumhoeheOG + cfgHaus.DickeOGdecke)), 'r', 0);
+  // Bemassung von ganz oben nach unten
+  bemassung(new Point(cfgHaus.HausLaengeOW/2+1, 0),
+            new Point(cfgHaus.HausLaengeOW/2+1, polyDach[1].y),
+           'r', 0.1);
 
 }
 
