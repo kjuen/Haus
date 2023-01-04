@@ -1,8 +1,9 @@
 /* global lil */
 
 // TODO:
-// - Innenraum Anbau flexibler machen: Puhh, schwierig!
-
+// - zeichne2DHaus aufräumen
+// - GUI fuer Seitenansicht verbessern
+// 3D-Haus zeichnen
 console.log('Hier wird unser Haus gebaut');
 
 // * Konfiguration
@@ -74,9 +75,9 @@ function cfgGrundstueckDefault() {
     OstWestLaengeSuedseite: 33.00,
     get Polygon() {
       return [new Point(0, 0),
-      new Point(this.OstWestLaengeNordseite, 0),
-      new Point(this.OstWestLaengeSuedseite, this.NordSuedLaengeWestseite),
-      new Point(0, this.NordSuedLaengeOstseite)];
+              new Point(this.OstWestLaengeNordseite, 0),
+              new Point(this.OstWestLaengeSuedseite, this.NordSuedLaengeWestseite),
+              new Point(0, this.NordSuedLaengeOstseite)];
     },
     // AbstBaugrenzeW: 16.86,   // sagt Herr Knibbe
     AbstBaugrenzeW: 17.00,     // 17.02 hat Herr Knibbe am 21.12.22 als Länge angegeben
@@ -93,11 +94,11 @@ function cfgGrundstueckDefault() {
       // 5---------------4
       get Polygon() {
         return [new Point(xcoordFromW(this.GrenzAbstand), ycoordFromS(this.GrenzAbstand + 10.0)),  // 0
-        new Point(xcoordFromBGO(6), ycoordFromS(this.GrenzAbstand + 10.0)),                // 1
-        new Point(xcoordFromBGO(6), ycoordFromS(this.GrenzAbstand + 10.0 + 1)),               // 2
-        new Point(xcoordFromBGO(0), ycoordFromS(this.GrenzAbstand + 10.0 + 1)),               // 3
-        new Point(xcoordFromBGO(0), ycoordFromS(this.GrenzAbstand)),                      // 4
-        new Point(xcoordFromW(this.GrenzAbstand), ycoordFromS(this.GrenzAbstand))];       // 5
+                new Point(xcoordFromBGO(6), ycoordFromS(this.GrenzAbstand + 10.0)),                // 1
+                new Point(xcoordFromBGO(6), ycoordFromS(this.GrenzAbstand + 10.0 + 1)),               // 2
+                new Point(xcoordFromBGO(0), ycoordFromS(this.GrenzAbstand + 10.0 + 1)),               // 3
+                new Point(xcoordFromBGO(0), ycoordFromS(this.GrenzAbstand)),                      // 4
+                new Point(xcoordFromW(this.GrenzAbstand), ycoordFromS(this.GrenzAbstand))];       // 5
       }
     },
     Kastanie: {
@@ -152,12 +153,12 @@ function cfgGrundstueckDefault() {
       get PolygonNeuerAnbau() {
         const ol = copyPoint(this.Polygon[4], -2.25, -5.8);
         return [this.Polygon[4],
-        copyPoint(this.Polygon[4], -2.25, 0),
-          ol,
-        new Point(this.Polygon[0].x, ol.y),
-        this.Polygon[0],
-        new Point(5, this.Polygon[0].y),
-        this.Polygon[3]];
+                copyPoint(this.Polygon[4], -2.25, 0),
+                ol,
+                new Point(this.Polygon[0].x, ol.y),
+                this.Polygon[0],
+                new Point(5, this.Polygon[0].y),
+                this.Polygon[3]];
       }
     }
   };
@@ -168,10 +169,11 @@ function cfgHausDefault() {
   return {
     show: false,
     zeigeVeranda: true,
-    zeigeAussenMasse: true,
-    zeigeInnenMasseHaus: true,
-    zeigeInnenMasseAnbau: true,
-    col: "green",
+    zeigeAussenMasse: false,
+    zeigeInnenMasse: false,
+    zeigeOG: false,
+    colEG: "Green",
+    colOG: "LightGreen",
     HausLaengeOW: 8.25,
     get HausLaengeInnenOW() {
       return this.HausLaengeOW - 2 * this.DickeAussenwand;
@@ -179,13 +181,14 @@ function cfgHausDefault() {
     HausAbstO: 0,
     HausAbstS: 0.5,
     OffsetNS: 1,
-    OffsetOW: 3,
+    OffsetOW: 2.4,
     AnbauAbstW: 0,
     AnbauAbstS: 4.25,
     AnbauLaengeNS: 5.70,
     DickeAussenwand: 0.4,
     DickeInnenwand: 0.2,
     DickeInnenwand: 0.2,
+    AbstAnbauEcke: -0.4,  // 2.6
     // Punkt 1 ist doch überflüssig!
     //          3-------4
     //          |       |
@@ -219,7 +222,34 @@ function cfgHausDefault() {
       const daw = this.DickeAussenwand;
       const diw = this.DickeInnenwand;
       const polyAussen = this.PolygonAussen;
+      const polyAnbauInnen = this.PolygonAnbauInnen;
+
+      // --
+      const pkt5 = copyPoint(polyAussen[7], daw, -daw);
+      const pkt6 = copyPoint(polyAnbauInnen[2], diw, 0);
+      const pkt7 =  copyPoint(polyAnbauInnen[1], diw, 0);
+      if(pkt5.x>=pkt6.x) {
+      } else {
+        pkt5.y += diw;
+        pkt6.y += diw;
+      }
+
+
       const polyHausInnen = [
+        copyPoint(polyAussen[2], daw, daw),   // 0
+        copyPoint(polyAussen[3], daw, daw),
+        copyPoint(polyAussen[4], -daw, daw),
+        copyPoint(polyAussen[5], -daw, -daw),
+        copyPoint(polyAussen[6], daw, -daw), // 4
+        pkt5, pkt6, pkt7
+      ];
+      return polyHausInnen;
+    },
+    get PolygonOGInnen() {
+      const daw = this.DickeAussenwand;
+      const diw = this.DickeInnenwand;
+      const polyAussen = this.PolygonAussen;
+      const polyHausOGInnen = [
         copyPoint(polyAussen[1], daw, daw),   // 0
         copyPoint(polyAussen[2], daw, daw),   // 1
         copyPoint(polyAussen[3], daw, daw),
@@ -228,37 +258,22 @@ function cfgHausDefault() {
         copyPoint(polyAussen[6], daw, -daw),
         copyPoint(polyAussen[7], daw, -daw),  // 6
       ];
-      return polyHausInnen;
+      return polyHausOGInnen;
     },
     get PolygonAnbauInnen() {
       const daw = this.DickeAussenwand;
       const diw = this.DickeInnenwand;
-      // const laengOWinnen = 8;
       const polyAussen = this.PolygonAussen;
-      const polyHausInnen = this.PolygonEGInnen;
-      // const ul = copyPoint(polyAussen[8], daw, -daw);
-      // const ur = copyPoint(polyAussen[8], daw+laengOWinnen, -daw);
-      // // if(ur.x < polyAussen[2].x + daw) {
-      // return [ul, ur,
-      //         copyPoint(polyAussen[0], daw+laengOWinnen, daw),
-      //         copyPoint(polyAussen[0], daw, daw)];
-      // // } else {
-      //   alert("????");
-      //   return 2;
-      // }
 
-      // const polyAnbauInnen =
-      const polyAnbauInnen = [
-        copyPoint(polyAussen[0], daw, daw),
-        copyPoint(polyHausInnen[0], -diw, 0),
-        copyPoint(polyHausInnen[6], -diw, 0),
-        copyPoint(polyAussen[8], daw, -daw)
-      ];
+
+      const ol = copyPoint(polyAussen[0], daw, daw);    // oben links
+      const or = copyPoint(polyAussen[2], -this.AbstAnbauEcke-diw, daw);  // oben rechts
+      const ur = new Point(or.x, polyAussen[7].y - daw);  // unten rechts
+      const ul = copyPoint(polyAussen[8], daw, -daw);   // unten links
+      const polyAnbauInnen = [ol, or, ur, ul];
       return polyAnbauInnen;
     },
     get PolygonSuedGiebel() {
-      // FIXME: Obersten Punkt richtig berechnen
-
       const distOGGiebelspitze = this.HausLaengeOW/2 * Math.tan(this.Dachneigung * Math.PI/180);
 
       const poly = [
@@ -297,10 +312,6 @@ function initCfg() {
 initCfg();
 
 
-
-// setStdTransformState();
-
-
 // * lil-gui
 function guiSetter(cfgObject, fieldName, value) {
   cfgObject[fieldName] = value;
@@ -312,6 +323,8 @@ const gui = new lil.GUI({title: "Einstellungen"});
 const guiHaus = gui.addFolder("Haus");
 guiHaus.open(false);
 guiHaus.add(cfgHaus, "zeigeAussenMasse").name("Außenmaße").onChange(v => guiSetter(cfgHaus, "zeigeAussenMasse", v));
+guiHaus.add(cfgHaus, "zeigeInnenMasse").name("Innenmaße").onChange(v => guiSetter(cfgHaus, "zeigeInnenMasse", v));
+guiHaus.add(cfgHaus, "zeigeOG").name("OG").onChange(v => guiSetter(cfgHaus, "zeigeOG", v));
 guiHaus.add(cfgHaus, "zeigeVeranda").name("Veranda").onChange(v => guiSetter(cfgHaus, "zeigeVeranda", v));
 guiHaus.add(cfgHaus, "AnbauAbstW", -1, 2, 0.05).name("Anbau Abstand West").onChange(v => guiSetter(cfgHaus, "AnbauAbstW", v));
 guiHaus.add(cfgHaus, "AnbauAbstS", -3, 6, 0.05).name("Anbau Abstand Süd").onChange(v => guiSetter(cfgHaus, "AnbauAbstS", v));
@@ -321,6 +334,7 @@ guiHaus.add(cfgHaus, "HausAbstS", 0, 3, 0.05).name("Haus Abstand Süd").onChange
 guiHaus.add(cfgHaus, "HausLaengeOW", 5, 10, 0.05).name("Haus Länge Ost West").onChange(v => guiSetter(cfgHaus, "HausLaengeOW", v));
 guiHaus.add(cfgHaus, "OffsetOW", 0, 6, 0.05).name("Ecke Länge Ost West").onChange(v => guiSetter(cfgHaus, "OffsetOW", v));
 guiHaus.add(cfgHaus, "OffsetNS", 0, 3, 0.05).name("Ecke Länge Nord Süd").onChange(v => guiSetter(cfgHaus, "OffsetNS", v));
+guiHaus.add(cfgHaus, "AbstAnbauEcke", -3, 6, 0.05).name("Abstand Ecke Anbau").onChange(v => guiSetter(cfgHaus, "AbstAnbauEcke", v));
 
 const guiDach = guiHaus.addFolder("OG und Dach");
 guiDach.close();
@@ -622,8 +636,8 @@ function drawBezier(vertexArray, col="black", lineWidth=3, dash=[]){
   drawEnv2D.ctx2D.beginPath();
   drawEnv2D.ctx2D.moveTo(bezStart.px, bezStart.py);
   drawEnv2D.ctx2D.bezierCurveTo(bezCp1.px, bezCp1.py,
-                          bezCp2.px, bezCp2.py,
-                          bezEnd.px, bezEnd.py);
+                                bezCp2.px, bezCp2.py,
+                                bezEnd.px, bezEnd.py);
   drawEnv2D.ctx2D.stroke();
 }
 
@@ -823,9 +837,9 @@ function berechneTabellenDaten() {
       = flHinterGarten.toFixed(2).toString() + "m²";
 
     // Haus Innen
-    const polyHausInnen = cfgHaus.PolygonEGInnen;
+    const polyHausInnenEG = cfgHaus.PolygonEGInnen;
 
-    const wflEG = areaPolygon(polyHausInnen);
+    const wflEG = areaPolygon(polyHausInnenEG);
     document.getElementById("InnenflaecheEG").innerText
       = wflEG.toFixed(2).toString() + "m²";
     let wflOG = berechneOG();   // wird noch durch die Gauben korrigiert
@@ -853,8 +867,8 @@ function berechneTabellenDaten() {
 
 
     // Wohnflaechen berichten
-    const comHausInnen = comPolygon(polyHausInnen);
-    drawEnv2D.ctx2D.fillStyle = cfgHaus.col;
+    const comHausInnen = comPolygon(polyHausInnenEG);
+    drawEnv2D.ctx2D.fillStyle = cfgHaus.colEG;
     let str = "EG: " + wflEG.toFixed(1).toString() + "m²";
     drawEnv2D.ctx2D.fillText(str, comHausInnen.px, comHausInnen.py);
     str = "OG: " + wflOG.toFixed(1).toString() + "m²";
@@ -967,19 +981,16 @@ function zeichne2DHaus() {
   // Das Haus
   const polyAussen = cfgHaus.PolygonAussen;
   if(cfgGrundstueck.zeigeHaus) {
-    drawPolygon(polyAussen, cfgHaus.col, 1.2);
+    drawPolygon(polyAussen, cfgHaus.colEG, 1.2);
     // Verlauf des Giebels: aufpassen, wenn die Nordwand eine Ecke hat!
-    const giebelUnten = middlePoint(polyAussen[5], polyAussen[6]);
-    const giebelOben = new Point(giebelUnten.x, polyAussen[4].y);
-    drawPolygon([giebelOben, giebelUnten],
-      cfgHaus.col, 0.2);
+    // const giebelUnten = middlePoint(polyAussen[5], polyAussen[6]);
+    // const giebelOben = new Point(giebelUnten.x, polyAussen[4].y);
+    // drawPolygon([giebelOben, giebelUnten],
+    //   cfgHaus.colEG, 0.2);
   }
-
-
 
   const mp67 = middlePoint(polyAussen[6], polyAussen[7]);
   const mp78 = middlePoint(polyAussen[7], polyAussen[8]);
-
 
   if(cfgGrundstueck.zeigeHaus && cfgHaus.zeigeAussenMasse) {
     bemassung(polyAussen[0], polyAussen[8], 'l');
@@ -1012,7 +1023,7 @@ function zeichne2DHaus() {
     const or = new Point(ol.x + 1.5, ol.y);
     const ul = pointInbetween(polyAussen[4], polyAussen[5], 2/3);
     const ur = new Point(ul.x + 1.5, ul.y);
-    drawPolygon([ol, or, ur, ul], cfgHaus.col, 0.75);
+    drawPolygon([ol, or, ur, ul], cfgHaus.colEG, 0.75);
     if(cfgHaus.zeigeAussenMasse) {
       bemassung(ol, or, 't');
       bemassung(or, ur, 'r');
@@ -1023,19 +1034,28 @@ function zeichne2DHaus() {
   const daw = cfgHaus.DickeAussenwand;
   const diw = cfgHaus.DickeInnenwand;
 
-  const polyHausInnen = cfgHaus.PolygonEGInnen;
+  const polyHausInnenEG = cfgHaus.PolygonEGInnen;
+  const polyHausInnenOG = cfgHaus.PolygonOGInnen;
 
 
   if (cfgGrundstueck.zeigeHaus) {
-    drawPolygon(polyHausInnen, cfgHaus.col, 0.6);
+    drawPolygon(polyHausInnenEG, cfgHaus.colEG, 0.6);
+    if(cfgHaus.zeigeOG) {
+      drawPolygon(polyHausInnenOG, cfgHaus.colOG, 0.6);
+    }
+    if(cfgHaus.zeigeInnenMasse) {
+      bemassung(polyHausInnenEG[0], polyHausInnenEG[7], 'b');
+      bemassung(polyHausInnenEG[2], polyHausInnenEG[3], 'l');
+      bemassung(polyHausInnenEG[6], new Point(polyHausInnenEG[3].x, polyHausInnenEG[6].y), 't');
+    }
   }
-  const wflEG = areaPolygon(polyHausInnen);
+  const wflEG = areaPolygon(polyHausInnenEG);
   let wflOG = berechneOG();   // wird noch durch die Gauben korrigiert
 
 
 
   // Gaube-Ost
-  if(cfgHaus.GaubeOstBreite>0.1) {
+  if(cfgHaus.zeigeOG && cfgHaus.GaubeOstBreite>0.1) {
     // Tiefe der Gaube berechnen: Da wo die Dachhöhe die OG-Raumhöhe schneidet
 
     const mitteAussen = middlePoint(polyAussen[4], polyAussen[5]);
@@ -1049,13 +1069,13 @@ function zeichne2DHaus() {
                                copyPoint(mitteAussen, 0, -cfgHaus.GaubeOstBreite/2),
                                copyPoint(mitteAussen, -tiefe, -cfgHaus.GaubeOstBreite/2),
                                copyPoint(mitteAussen, -tiefe, cfgHaus.GaubeOstBreite/2)];
-      drawPolygon(polyGaubeAussen, cfgHaus.col, 1);
-      drawPolygon([middlePoint(polyGaubeAussen[2], polyGaubeAussen[3]), polyGaubeAussen[0]],cfgHaus.col, 0.8);
-      drawPolygon([middlePoint(polyGaubeAussen[2], polyGaubeAussen[3]), polyGaubeAussen[1]],cfgHaus.col, 0.8);
+      drawPolygon(polyGaubeAussen, cfgHaus.colOG, 1);
+      drawPolygon([middlePoint(polyGaubeAussen[2], polyGaubeAussen[3]), polyGaubeAussen[0]],cfgHaus.colOG, 0.8);
+      drawPolygon([middlePoint(polyGaubeAussen[2], polyGaubeAussen[3]), polyGaubeAussen[1]],cfgHaus.colOG, 0.8);
     }
   }
 
-  if(cfgHaus.GaubeWestBreite>0.1) {
+  if(cfgHaus.zeigeOG && cfgHaus.GaubeWestBreite>0.1) {
 
     const mitteAussen = middlePoint(polyAussen[1], polyAussen[7]);
     const tiefe = berechneSchittAbstand(2.5) + cfgHaus.DickeAussenwand;
@@ -1068,17 +1088,17 @@ function zeichne2DHaus() {
                                copyPoint(mitteAussen, 0, -cfgHaus.GaubeWestBreite/2),
                                copyPoint(mitteAussen, tiefe, -cfgHaus.GaubeWestBreite/2),
                                copyPoint(mitteAussen, tiefe, cfgHaus.GaubeWestBreite/2)];
-      drawPolygon(polyGaubeAussen, cfgHaus.col, 1);
-      drawPolygon([middlePoint(polyGaubeAussen[2], polyGaubeAussen[3]), polyGaubeAussen[0]],cfgHaus.col, 0.8);
-      drawPolygon([middlePoint(polyGaubeAussen[2], polyGaubeAussen[3]), polyGaubeAussen[1]],cfgHaus.col, 0.8);
+      drawPolygon(polyGaubeAussen, cfgHaus.colOG, 1);
+      drawPolygon([middlePoint(polyGaubeAussen[2], polyGaubeAussen[3]), polyGaubeAussen[0]],cfgHaus.colOG, 0.8);
+      drawPolygon([middlePoint(polyGaubeAussen[2], polyGaubeAussen[3]), polyGaubeAussen[1]],cfgHaus.colOG, 0.8);
     }
   }
 
 
   // Wohnflaechen berichten: In die Skizze einzeichnen
   if (cfgGrundstueck.zeigeHaus) {
-    const comHausInnen = comPolygon(polyHausInnen);
-    drawEnv2D.ctx2D.fillStyle = cfgHaus.col;
+    const comHausInnen = comPolygon(polyHausInnenEG);
+    drawEnv2D.ctx2D.fillStyle = cfgHaus.colEG;
     let str = "EG: " + wflEG.toFixed(1).toString() + "m²";
     drawEnv2D.ctx2D.fillText(str, comHausInnen.px, comHausInnen.py);
     str = "OG: " + wflOG.toFixed(1).toString() + "m²";
@@ -1089,14 +1109,18 @@ function zeichne2DHaus() {
   const polyAnbauInnen = cfgHaus.PolygonAnbauInnen;
 
   if (cfgGrundstueck.zeigeHaus) {
-    drawPolygon(polyAnbauInnen, cfgHaus.col, 0.6);
+    drawPolygon(polyAnbauInnen, cfgHaus.colEG, 0.6);
+    if(cfgHaus.zeigeInnenMasse) {
+      bemassung(polyAnbauInnen[0], polyAnbauInnen[1], 'b');
+      bemassung(polyAnbauInnen[0], polyAnbauInnen[3], 'r');
+    }
   }
 
   const wflAnbau =areaPolygon(polyAnbauInnen);
   if (cfgGrundstueck.zeigeHaus) {
     const comAnbauInnen = comPolygon(polyAnbauInnen);
 
-    drawEnv2D.ctx2D.fillStyle = cfgHaus.col;
+    drawEnv2D.ctx2D.fillStyle = cfgHaus.colEG;
     let str = wflAnbau.toFixed(1).toString() + "m²";
     drawEnv2D.ctx2D.fillText(str, comAnbauInnen.px, comAnbauInnen.py);
   }
@@ -1118,7 +1142,7 @@ function zeichne2DAltesHaus() {
     drawEnv2D.ctx2D.translate(68, -10); drawEnv2D.ctx2D.rotate(-Math.PI / 180 * 2);
     drawPolygon(cfgGrundstueck.AltesHaus.Polygon, 'gray', 1);
     const polyNeuerAnbau = cfgGrundstueck.AltesHaus.PolygonNeuerAnbau;
-    drawPolygon(cfgGrundstueck.AltesHaus.PolygonNeuerAnbau, cfgHaus.col, 1, [2,3]);
+    drawPolygon(cfgGrundstueck.AltesHaus.PolygonNeuerAnbau, cfgHaus.colEG, 1, [2,3]);
 
 
     // bemassung ruft setStdTransformState auf. Daher muss man immer wieder translate und rotate setzen
@@ -1143,7 +1167,7 @@ function zeichne2DAltesHaus() {
 
     const flNeuerAnbau = areaPolygon(polyNeuerAnbau);
     const comNeuerAnbau = comPolygon(polyNeuerAnbau);
-    drawEnv2D.ctx2D.fillStyle = cfgHaus.col;
+    drawEnv2D.ctx2D.fillStyle = cfgHaus.colEG;
     str = "Neuer Anbau: " + flNeuerAnbau.toFixed(1).toString() + "m²";
     drawEnv2D.ctx2D.fillText(str, comNeuerAnbau.px + 50, comNeuerAnbau.py-40);
 
@@ -1277,7 +1301,7 @@ function zeichneSuedGiebel() {
   // Bemassung von ganz oben nach unten
   bemassung(new Point(cfgHaus.HausLaengeOW/2+1, 0),
             new Point(cfgHaus.HausLaengeOW/2+1, polyDach[1].y),
-           'r', 0.1);
+            'r', 0.1);
 
 }
 
