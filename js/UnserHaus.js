@@ -1045,6 +1045,7 @@ function zeichne2DHaus() {
     }
     if(cfgHaus.zeigeInnenMasse) {
       bemassung(polyHausInnenEG[0], polyHausInnenEG[7], 'b');
+      bemassung(polyHausInnenEG[3], polyHausInnenEG[4], 't');
       bemassung(polyHausInnenEG[2], polyHausInnenEG[3], 'l');
       bemassung(polyHausInnenEG[6], new Point(polyHausInnenEG[3].x, polyHausInnenEG[6].y), 't');
     }
@@ -1052,47 +1053,44 @@ function zeichne2DHaus() {
   const wflEG = areaPolygon(polyHausInnenEG);
   let wflOG = berechneOG();   // wird noch durch die Gauben korrigiert
 
-
-
   // Gaube-Ost
-  if(cfgHaus.zeigeOG && cfgHaus.GaubeOstBreite>0.1) {
-    // Tiefe der Gaube berechnen: Da wo die Dachhöhe die OG-Raumhöhe schneidet
+  // Tiefe der Gaube berechnen: Da wo die Dachhöhe die OG-Raumhöhe schneidet
 
-    const mitteAussen = middlePoint(polyAussen[4], polyAussen[5]);
-    const tiefe = berechneSchittAbstand(2.5) + cfgHaus.DickeAussenwand;
-    // Wohnflaeche korrigieren:
-    const x = berechneSchittAbstand(2.3);
-    wflOG += x * cfgHaus.GaubeOstBreite;
+  let mitteAussen = middlePoint(polyAussen[4], polyAussen[5]);
+  let tiefe = berechneSchittAbstand(2.5) + cfgHaus.DickeAussenwand;
+  // Wohnflaeche korrigieren:
+  let x = berechneSchittAbstand(2.3);
+  wflOG += x * cfgHaus.GaubeOstBreite;
 
-    if (cfgGrundstueck.zeigeHaus) {
-      const polyGaubeAussen = [copyPoint(mitteAussen, 0, cfgHaus.GaubeOstBreite/2),
-                               copyPoint(mitteAussen, 0, -cfgHaus.GaubeOstBreite/2),
-                               copyPoint(mitteAussen, -tiefe, -cfgHaus.GaubeOstBreite/2),
-                               copyPoint(mitteAussen, -tiefe, cfgHaus.GaubeOstBreite/2)];
-      drawPolygon(polyGaubeAussen, cfgHaus.colOG, 1);
-      drawPolygon([middlePoint(polyGaubeAussen[2], polyGaubeAussen[3]), polyGaubeAussen[0]],cfgHaus.colOG, 0.8);
-      drawPolygon([middlePoint(polyGaubeAussen[2], polyGaubeAussen[3]), polyGaubeAussen[1]],cfgHaus.colOG, 0.8);
-    }
+  if (cfgGrundstueck.zeigeHaus && cfgHaus.zeigeOG && cfgHaus.GaubeOstBreite>0.1) {
+    const polyGaubeAussen = [copyPoint(mitteAussen, 0, cfgHaus.GaubeOstBreite/2),
+                             copyPoint(mitteAussen, 0, -cfgHaus.GaubeOstBreite/2),
+                             copyPoint(mitteAussen, -tiefe, -cfgHaus.GaubeOstBreite/2),
+                             copyPoint(mitteAussen, -tiefe, cfgHaus.GaubeOstBreite/2)];
+    drawPolygon(polyGaubeAussen, cfgHaus.colOG, 1);
+    drawPolygon([middlePoint(polyGaubeAussen[2], polyGaubeAussen[3]), polyGaubeAussen[0]],cfgHaus.colOG, 0.8);
+    drawPolygon([middlePoint(polyGaubeAussen[2], polyGaubeAussen[3]), polyGaubeAussen[1]],cfgHaus.colOG, 0.8);
   }
 
-  if(cfgHaus.zeigeOG && cfgHaus.GaubeWestBreite>0.1) {
 
-    const mitteAussen = middlePoint(polyAussen[1], polyAussen[7]);
-    const tiefe = berechneSchittAbstand(2.5) + cfgHaus.DickeAussenwand;
-    // Wohnflaeche korrigieren:
-    const x = berechneSchittAbstand(2.3);
-    wflOG += x * cfgHaus.GaubeWestBreite;
+  // Gaube West
 
-    if (cfgGrundstueck.zeigeHaus) {
-      const polyGaubeAussen = [copyPoint(mitteAussen, 0, cfgHaus.GaubeWestBreite/2),
-                               copyPoint(mitteAussen, 0, -cfgHaus.GaubeWestBreite/2),
-                               copyPoint(mitteAussen, tiefe, -cfgHaus.GaubeWestBreite/2),
-                               copyPoint(mitteAussen, tiefe, cfgHaus.GaubeWestBreite/2)];
-      drawPolygon(polyGaubeAussen, cfgHaus.colOG, 1);
-      drawPolygon([middlePoint(polyGaubeAussen[2], polyGaubeAussen[3]), polyGaubeAussen[0]],cfgHaus.colOG, 0.8);
-      drawPolygon([middlePoint(polyGaubeAussen[2], polyGaubeAussen[3]), polyGaubeAussen[1]],cfgHaus.colOG, 0.8);
-    }
+  mitteAussen = middlePoint(polyAussen[1], polyAussen[7]);
+  tiefe = berechneSchittAbstand(2.5) + cfgHaus.DickeAussenwand;
+  // Wohnflaeche korrigieren:
+  x = berechneSchittAbstand(2.3);
+  wflOG += x * cfgHaus.GaubeWestBreite;
+
+  if (cfgGrundstueck.zeigeHaus && cfgHaus.zeigeOG && cfgHaus.GaubeWestBreite>0.1) {
+    const polyGaubeAussen = [copyPoint(mitteAussen, 0, cfgHaus.GaubeWestBreite/2),
+                             copyPoint(mitteAussen, 0, -cfgHaus.GaubeWestBreite/2),
+                             copyPoint(mitteAussen, tiefe, -cfgHaus.GaubeWestBreite/2),
+                             copyPoint(mitteAussen, tiefe, cfgHaus.GaubeWestBreite/2)];
+    drawPolygon(polyGaubeAussen, cfgHaus.colOG, 1);
+    drawPolygon([middlePoint(polyGaubeAussen[2], polyGaubeAussen[3]), polyGaubeAussen[0]],cfgHaus.colOG, 0.8);
+    drawPolygon([middlePoint(polyGaubeAussen[2], polyGaubeAussen[3]), polyGaubeAussen[1]],cfgHaus.colOG, 0.8);
   }
+
 
 
   // Wohnflaechen berichten: In die Skizze einzeichnen
