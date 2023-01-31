@@ -65,23 +65,30 @@ function drawEnv2DSeitenansichten() {
 function cfgGrundstueckDefault() {
   return {
     zeigeMasse: true,
-    zeigeHaus: true,
+    zeigeHaus: false,
     zeigeGitter: true,
     zeigeBaeume: true,
 
-    NordSuedLaengeWestseite: 17.20,   // 17.20 hat Herr Knibbe am 21.12.22 als Länge angegeben
-    NordSuedLaengeOstseite: 17.20,
-    OstWestLaengeNordseite: 30.00,
-    OstWestLaengeSuedseite: 33.00,
+    NordSuedLaengeWestseite: 17.21,   // 17.20 hat Herr Knibbe am 21.12.22 als Länge angegeben
+    NordSuedLaengeOstseite: 17.615,
+    OstWestLaengeNordseite: 30.23,
+    OstWestLaengeSuedseite: 33.21,
     get Polygon() {
       return [new Point(0, 0),
               new Point(this.OstWestLaengeNordseite, 0),
-              new Point(this.OstWestLaengeSuedseite, this.NordSuedLaengeWestseite),
-              new Point(0, this.NordSuedLaengeOstseite)];
+              new Point(this.OstWestLaengeSuedseite, this.NordSuedLaengeOstseite),
+              new Point(0, this.NordSuedLaengeWestseite)];
     },
-    // AbstBaugrenzeW: 16.86,   // sagt Herr Knibbe
-    AbstBaugrenzeW: 17.00,     // 17.02 hat Herr Knibbe am 21.12.22 als Länge angegeben
     Baufenster: {
+      // Die Punkte der Baugrenze habe ich so berechnet:
+      // const suedPunkt = pointInbetween(polyGrdst[3], polyGrdst[2],
+      //                                  cfgGrundstueck.Baufenster.AbstBaugrenzeWSued / cfgGrundstueck.OstWestLaengeSuedseite);
+      // const nordPunkt = pointInbetween(polyGrdst[0], polyGrdst[1],
+      //                                  cfgGrundstueck.Baufenster.AbstBaugrenzeWNord / cfgGrundstueck.OstWestLaengeNordseite);
+
+      Baugrenze: [new Point(16.22, 0), new Point(16.8, 17.4149)],
+      AbstBaugrenzeWSued: 16.80,
+      AbstBaugrenzeWNord: 16.22,
       GrenzAbstand: 2.5,
       col: "red",
       show: true,
@@ -93,17 +100,26 @@ function cfgGrundstueckDefault() {
       // |               |
       // 5---------------4
       get Polygon() {
-        return [new Point(xcoordFromW(this.GrenzAbstand), ycoordFromS(this.GrenzAbstand + 10.0)),  // 0
-                new Point(xcoordFromBGO(6), ycoordFromS(this.GrenzAbstand + 10.0)),                // 1
-                new Point(xcoordFromBGO(6), ycoordFromS(this.GrenzAbstand + 10.0 + 1)),               // 2
-                new Point(xcoordFromBGO(0), ycoordFromS(this.GrenzAbstand + 10.0 + 1)),               // 3
-                new Point(xcoordFromBGO(0), ycoordFromS(this.GrenzAbstand)),                      // 4
-                new Point(xcoordFromW(this.GrenzAbstand), ycoordFromS(this.GrenzAbstand))];       // 5
+        const abst0N = 5;
+        const abst05 = 10;
+        const abst12 = 1;
+        const abst23 = 7.03;
+        const p0 = new Point(xcoordFromW(this.GrenzAbstand), abst0N);
+        const p1x =  xcoordFromBGO(abst23, abst0N);
+        const p1 = new Point(p1x, abst0N);
+        const p2 = copyPoint(p1, 0, -abst12);
+        const p3 = new Point(xcoordFromBGO(0, p2.y), p2.y);
+        const p4y = ycoordFromS(this.GrenzAbstand, this.AbstBaugrenzeWSued);
+        const p4 = new Point(xcoordFromBGO(0, p4y), p4y);
+        const p5x = xcoordFromW(this.GrenzAbstand);
+        const p5y = ycoordFromS(this.GrenzAbstand, p5x);
+        const p5 = new Point(p5x, p5y);
+        return [p0, p1, p2, p3, p4, p5];
       }
     },
     Kastanie: {
-      Radius: 0.59,
-      AbstN: 0.59 + 0.4,
+      Radius: 0.60,
+      AbstN: 0.91,    // laut Vermesser 0.6 + 0.31,
       AbstW: 4.6
     },
     Eiche: {
@@ -179,7 +195,7 @@ function cfgHausDefault() {
       return this.HausLaengeOW - 2 * this.DickeAussenwand;
     },
     HausAbstO: 0,
-    HausAbstS: 0.5,
+    HausAbstS: 0.75,
     OffsetNS: 1,
     OffsetOW: 2.4,
     AnbauAbstW: 0,
@@ -326,7 +342,7 @@ guiHaus.add(cfgHaus, "zeigeAussenMasse").name("Außenmaße").onChange(v => guiSe
 guiHaus.add(cfgHaus, "zeigeInnenMasse").name("Innenmaße").onChange(v => guiSetter(cfgHaus, "zeigeInnenMasse", v));
 guiHaus.add(cfgHaus, "zeigeOG").name("OG").onChange(v => guiSetter(cfgHaus, "zeigeOG", v));
 guiHaus.add(cfgHaus, "zeigeVeranda").name("Veranda").onChange(v => guiSetter(cfgHaus, "zeigeVeranda", v));
-guiHaus.add(cfgHaus, "AnbauAbstW", -1, 2, 0.05).name("Anbau Abstand West").onChange(v => guiSetter(cfgHaus, "AnbauAbstW", v));
+guiHaus.add(cfgHaus, "AnbauAbstW", 0, 8, 0.05).name("Anbau Abstand West").onChange(v => guiSetter(cfgHaus, "AnbauAbstW", v));
 guiHaus.add(cfgHaus, "AnbauAbstS", -3, 6, 0.05).name("Anbau Abstand Süd").onChange(v => guiSetter(cfgHaus, "AnbauAbstS", v));
 guiHaus.add(cfgHaus, "AnbauLaengeNS", 3, 10, 0.05).name("Anbau Länge Nord Süd").onChange(v => guiSetter(cfgHaus, "AnbauLaengeNS", v));
 
@@ -361,12 +377,35 @@ guiGrdstck.add(cfgGrundstueck, "zeigeGitter").name("Gitter").onChange(v => guiSe
 // x-Koordinate gemessen von der westlichen Grundstücksgrenze
 const xcoordFromW = x => x; //drawEnv2D.offsetX + x * drawEnv2D.scale;
 // x-Koordinate gemessen von der Baugrenze im Osten
-const xcoordFromBGO = x => cfgGrundstueck.AbstBaugrenzeW - x; // drawEnv2D.offsetX + (cfgGrundstueck.AbstBaugrenzeW - x) * drawEnv2D.scale ;
-// y-Koordinate gemessen von der nördlichen Grundstücksgrenze
+function xcoordFromBGO(x, y=-1) {
+  let ret = 0;
+  if (y<0) {
+    ret = cfgGrundstueck.Baufenster.AbstBaugrenzeWSued - x; // drawEnv2D.offsetX + (cfgGrundstueck.AbstBaugrenzeWSued - x) * drawEnv2D.scale ;
+  } else {
+    const p = berechneSchnittpunkt(new Point(-10, y), new Point(cfgGrundstueck.OstWestLaengeSuedseite, y),
+                                   cfgGrundstueck.Baufenster.Baugrenze[0], cfgGrundstueck.Baufenster.Baugrenze[1]);
+    ret = p.x - x;
+  }
+  return ret;
+}
+  // y-Koordinate gemessen von der nördlichen Grundstücksgrenze
 const ycoordFromN = y => y; // drawEnv2D.offsetY + y * drawEnv2D.scale;
 // y-Koordinate gemessen von der südlichen Grundstücksgrenze
 // Nur richtig, wenn das Grundstück rechteckig ist
-const ycoordFromS = y => cfgGrundstueck.NordSuedLaengeWestseite- y; // drawEnv2D.offsetY + (cfgGrundstueck.NordSuedLaengeWestseite- y) * drawEnv2D.scale;
+function ycoordFromS(y, x=-1)  {
+
+  let ret = 0 ;
+  if(x < 0) {
+    ret =  cfgGrundstueck.NordSuedLaengeWestseite- y; // drawEnv2D.offsetY + (cfgGrundstueck.NordSuedLaengeWestseite- y) * drawEnv2D.scale;
+  } else {
+    const p = pointInbetween(cfgGrundstueck.Polygon[3], cfgGrundstueck.Polygon[2],
+                             x/cfgGrundstueck.OstWestLaengeSuedseite);
+    // console.log('x/cfgGrundstueck.OstWestLaengeSuedseite=', x/cfgGrundstueck.OstWestLaengeSuedseite);
+
+    return p.y - y;
+  }
+  return ret;
+}
 
 const xcoordFromBFW = x => cfgGrundstueck.Baufenster.Polygon[0].x + x;
 const xcoordFromBFO = x => cfgGrundstueck.Baufenster.Polygon[3].x - x;
@@ -905,6 +944,8 @@ function zeichne2DGrundstueck() {
   if(cfgGrundstueck.zeigeMasse) {
     bemassung(polyGrdst[0], polyGrdst[1], 't');
     bemassung(polyGrdst[0], polyGrdst[3], 'l');
+    bemassung(polyGrdst[2], polyGrdst[3], 'b');
+    bemassung(polyGrdst[1], polyGrdst[2], 'r');
   }
 
   if (cfgGrundstueck.zeigeBaeume) {
@@ -931,7 +972,7 @@ function zeichne2DGrundstueck() {
 
     const neuerWeg = datenNeuerWeg();
 
-    const wegCol = "blue";
+    const wegCol = "LightSalmon";
     const wegLs = 1.0;
     drawBezier(neuerWeg.bezO, wegCol, wegLs, [2,3]);
     drawBezier(neuerWeg.bezU, wegCol, wegLs, [2,3]);
@@ -949,20 +990,38 @@ function zeichne2DGrundstueck() {
 
 
   // Baugrenze Richtung Wittenbergener Weg
-  drawPolygon([new Point(cfgGrundstueck.AbstBaugrenzeW, 0),
-               new Point(cfgGrundstueck.AbstBaugrenzeW, cfgGrundstueck.NordSuedLaengeWestseite)],
-              "blue", 1);
+  drawPolygon(cfgGrundstueck.Baufenster.Baugrenze, "blue", 1, [2,3]);
+  // bemassung(nordPunkt, suedPunkt, 'r');  // check, dass das mit dem Vermesser passt
+
+  // drawPolygon([new Point(cfgGrundstueck.AbstBaugrenzeWSued, 0),
+  //              new Point(cfgGrundstueck.AbstBaugrenzeWSued, cfgGrundstueck.NordSuedLaengeWestseite)],
+  //             "blue", 1);
 
   // Baufenster
   const polyBF = cfgGrundstueck.Baufenster.Polygon;
   if(cfgGrundstueck.Baufenster.show) {
     drawPolygon(polyBF, cfgGrundstueck.Baufenster.col, 1.2, [1,2]);
     if(cfgGrundstueck.Baufenster.zeigeMasse) {
+
       bemassung(polyBF[0], polyBF[5], 'l');
+
+      // const suedPunkt = pointInbetween(polyGrdst[3], polyGrdst[2],
+      //                                  cfgGrundstueck.Baufenster.AbstBaugrenzeWSued / cfgGrundstueck.OstWestLaengeSuedseite);
+      // const nordPunkt = pointInbetween(polyGrdst[0], polyGrdst[1],
+      //                                  cfgGrundstueck.Baufenster.AbstBaugrenzeWNord / cfgGrundstueck.OstWestLaengeNordseite);
+      const sp = berechneSchnittpunkt(polyBF[0], copyPoint(polyBF[0], cfgGrundstueck.OstWestLaengeNordseite),
+                                      cfgGrundstueck.Baufenster.Baugrenze[0],cfgGrundstueck.Baufenster.Baugrenze[1]);
+                                      // nordPunkt, suedPunkt);
+
+      bemassung(polyBF[0], sp, 'b');
       bemassung(polyBF[4], polyBF[5], 'b');
       bemassung(polyBF[0], polyBF[1], 't');
       bemassung(polyBF[1], polyBF[2], 'r');
       bemassung(polyBF[2], polyBF[3], 't');
+      bemassung(polyBF[3], polyBF[4], 'l');
+      bemassung(polyBF[4], new Point(polyBF[4].x, ycoordFromS(0, polyBF[4].x)), 'r', 0.1);
+      bemassung(polyBF[5], new Point(polyBF[5].x, ycoordFromS(0, polyBF[5].x)), 'r', 0);
+      bemassung(polyBF[5], new Point(xcoordFromW(0), polyBF[5].y), 't', 0);
       bemassung(polyBF[3], new Point(polyBF[3].x, ycoordFromN(0)), 'r');
       // bemassung(polyBF[3], polyBF[4], 'r');
       // Mass von der Kastanie zum Baufenster
@@ -1005,6 +1064,14 @@ function zeichne2DHaus() {
     bemassung(polyAussen[5], polyAussen[6], 't');
     bemassung(polyAussen[6], polyAussen[7], 'l');
 
+    // Abstände zur Südgrenze des Grundstücks
+    let sp = berechneSchnittpunkt(cfgGrundstueck.Polygon[2], cfgGrundstueck.Polygon[3],
+                                  polyAussen[6], copyPoint(polyAussen[6], 0, cfgGrundstueck.NordSuedLaengeWestseite));
+    bemassung(sp, polyAussen[6], 'r', 0);
+    sp = berechneSchnittpunkt(cfgGrundstueck.Polygon[2], cfgGrundstueck.Polygon[3],
+                                  polyAussen[5], copyPoint(polyAussen[5], 0, cfgGrundstueck.NordSuedLaengeWestseite));
+    bemassung(sp, polyAussen[5], 'l', 0);
+
     bemassung(polyAussen[8], new Point(0, polyAussen[8].y), 't');
     bemassung(mp78, new Point(mp78.x, ycoordFromS(0)), 'r');
     bemassung(mp67, new Point(xcoordFromW(0), mp67.y), 't');
@@ -1015,6 +1082,10 @@ function zeichne2DHaus() {
                                      ycoordFromN(cfgGrundstueck.Kastanie.AbstN + cfgGrundstueck.Kastanie.Radius));
       const tmpPoint = new Point(kastanieSued.x, polyAussen[0].y);
       bemassung(tmpPoint, kastanieSued, 'r', 0);
+      // Abstand zur Hausecke
+      if(cfgHaus.OffsetNS>0.05) {
+        bemassung(polyAussen[3], kastanieSued, 't', 0);
+      }
     }
   }
 
@@ -1173,7 +1244,7 @@ function zeichne2DAltesHaus() {
     drawEnv2D.setStdTransformState();
 
     // Eigene Messung Dez. 2022
-    // let x = cfgGrundstueck.AbstBaugrenzeW - 0.24;
+    // let x = cfgGrundstueck.AbstBaugrenzeWSued - 0.24;
     // bemassung(new Point(x, 7.55), new Point(x, ycoordFromN(0)), 'l', 0);
     // bemassung(new Point(x, 7.55), new Point(x, ycoordFromS(0)), 'r', 0.4);
     // const tmpPoint = new Point(x+ 0.3, 14.15);
