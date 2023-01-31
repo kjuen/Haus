@@ -64,8 +64,8 @@ function drawEnv2DSeitenansichten() {
 
 function cfgGrundstueckDefault() {
   return {
-    zeigeMasse: true,
-    zeigeHaus: false,
+    zeigeMasse: false,
+    zeigeHaus: true,
     zeigeGitter: true,
     zeigeBaeume: true,
 
@@ -120,7 +120,7 @@ function cfgGrundstueckDefault() {
     Kastanie: {
       Radius: 0.60,
       AbstN: 0.91,    // laut Vermesser 0.6 + 0.31,
-      AbstW: 4.6
+      AbstW: 4.95     // selber aus der Zeichnung vom Vermesser rausgelesen
     },
     Eiche: {
       Radius: 0.6,
@@ -183,21 +183,21 @@ function cfgGrundstueckDefault() {
 
 function cfgHausDefault() {
   return {
-    show: false,
-    zeigeVeranda: true,
-    zeigeAussenMasse: false,
+    // show: false,
+    zeigeVeranda: false,
+    zeigeAussenMasse: true,
     zeigeInnenMasse: false,
     zeigeOG: false,
     colEG: "Green",
     colOG: "LightGreen",
-    HausLaengeOW: 8.25,
+    HausLaengeOW: 8.00,
     get HausLaengeInnenOW() {
       return this.HausLaengeOW - 2 * this.DickeAussenwand;
     },
     HausAbstO: 0,
     HausAbstS: 0.75,
-    OffsetNS: 1,
-    OffsetOW: 2.4,
+    OffsetNS: 0.8,
+    OffsetOW: 0,
     AnbauAbstW: 0,
     AnbauAbstS: 4.25,
     AnbauLaengeNS: 5.70,
