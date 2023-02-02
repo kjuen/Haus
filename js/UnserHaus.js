@@ -1,8 +1,10 @@
 /* global lil */
 
 // TODO:
+// - Anteil Fläche OG über 2.20 ausrechnen (darf nicht mehr als Fläche EG sein, aber ist das bebaute Fläche oder Wohnfläche?)
 // - Die ungleichmäßige Abstandsfläche nach Süden berechnen!
 // - Die Gaubenpolygon mussen noch rotiert werden
+// - Innen-Polygone rotieren
 // - GUI fuer Seitenansicht verbessern
 // - 3D-Haus zeichnen
 console.log('Hier wird unser Haus gebaut');
@@ -1116,12 +1118,12 @@ function zeichne2DHaus() {
     bemassung(sp, polyAussen[5], 'l', 0);
 
     // Abstand zur Westgrenze
-    bemassung(polyAussen[8], new Point(0, polyAussen[8].y), 't', 0);
+    bemassung(polyAussen[6], new Point(0, polyAussen[6].y), 't', 0);
     if(Math.abs(cfgHaus.HausDrehWinkel)>0.001) {
       bemassung(polyAussen[0], new Point(0, polyAussen[0].y), 't', 0);
     }
     if(cfgHaus.AnbauLaengeOW > 0) {
-      bemassung(polyAussen[6], new Point(0, polyAussen[6].y), 't', 0);
+      bemassung(polyAussen[8], new Point(0, polyAussen[8].y), 't', 0);
       // bemassung(mp67, new Point(xcoordFromW(0), mp67.y), 't');
       bemassung(mp78, new Point(mp78.x, ycoordFromS(0)), 'r');
     }
