@@ -87,11 +87,12 @@ function cfgGrundstueckDefault() {
       //                                  cfgGrundstueck.Baufenster.AbstBaugrenzeWNord / cfgGrundstueck.OstWestLaengeNordseite);
 
       Baugrenze: [new Point(16.22, 0), new Point(16.8, 17.4149)],
+      BaugrenzeDrehwinkel: 1.91,   // in Grad
       AbstBaugrenzeWSued: 16.80,
       AbstBaugrenzeWNord: 16.22,
       GrenzAbstand: 2.5,
       col: "red",
-      show: true,
+      show: false,
       zeigeMasse: false,
       //        2--------3
       //        |        |
@@ -190,21 +191,25 @@ function cfgHausDefault() {
     zeigeOG: false,
     colEG: "Green",
     colOG: "LightGreen",
+    HausDrehWinkel: 0, // -1.91,
     HausLaengeOW: 8.00,
     get HausLaengeInnenOW() {
       return this.HausLaengeOW - 2 * this.DickeAussenwand;
     },
     HausAbstO: 0,
     HausAbstS: 0.75,
+    HausLaengeNS: 9.5,
     OffsetNS: 0.8,
     OffsetOW: 0,
-    AnbauAbstW: 0,
-    AnbauAbstS: 4.25,
+    AnbauLaengeOW: 5.75,
+    // AnbauAbstW: 0,
+    // AnbauAbstS: 4.25,
     AnbauLaengeNS: 5.70,
     DickeAussenwand: 0.4,
     DickeInnenwand: 0.2,
     DickeInnenwand: 0.2,
     AbstAnbauEcke: -0.4,  // 2.6
+    AnbauInnenflaeche: false,
     // Punkt 1 ist doch überflüssig!
     //          3-------4
     //          |       |
@@ -215,24 +220,21 @@ function cfgHausDefault() {
     //        |         |
     //        6---------5
     get PolygonAussen() {
-      return [new Point(xcoordFromBFW(this.AnbauAbstW),      // 0
-                        ycoordFromBFS(this.AnbauAbstS + this.AnbauLaengeNS)),
-              new Point(xcoordFromBFO(this.HausLaengeOW),  // 1
-                        ycoordFromBFS(this.AnbauAbstS + this.AnbauLaengeNS)),
-              new Point(xcoordFromBFO(this.HausLaengeOW - this.OffsetOW),  // 2
-                        ycoordFromBFS(this.AnbauAbstS + this.AnbauLaengeNS)),
-              new Point(xcoordFromBFO(this.HausAbstO + this.HausLaengeOW - this.OffsetOW),   // 3
-                        ycoordFromBFS(this.AnbauAbstS + this.AnbauLaengeNS + this.OffsetNS)),
-              new Point(xcoordFromBFO(this.HausAbstO),  // 4
-                        ycoordFromBFS(this.AnbauAbstS + this.AnbauLaengeNS + this.OffsetNS)),
-              new Point(xcoordFromBFO(this.HausAbstO),  // 5
-                        ycoordFromBFS(this.HausAbstS)),
-              new Point(xcoordFromBFO(this.HausAbstO + this.HausLaengeOW),   // 6
-                        ycoordFromBFS(this.HausAbstS)),
-              new Point(xcoordFromBFO(this.HausAbstO + this.HausLaengeOW),   // 7
-                        ycoordFromBFS(this.AnbauAbstS)),
-              new Point(xcoordFromBFW(this.AnbauAbstW),   // 8
-                        ycoordFromBFS(this.AnbauAbstS))];
+      const p5 = new Point(xcoordFromBFO(this.HausAbstO),  // 5
+                           ycoordFromBFS(this.HausAbstS));
+      const p4 = copyPoint(p5, 0, -this.HausLaengeNS);
+      const p3 = copyPoint(p4, -this.HausLaengeOW + this.OffsetOW);
+      const p2 = copyPoint(p3, 0, this.OffsetNS);
+      const p6 = copyPoint(p5, -this.HausLaengeOW, 0);
+      const p1 = new Point(p5.x - this.HausLaengeOW, p2.y);
+      // const p1 = new Point(xcoordFromBFO(this.HausLaengeOW),  // 1
+      //                      ycoordFromBFS(this.AnbauAbstS + this.AnbauLaengeNS));
+      const p0 = copyPoint(p1, -this.AnbauLaengeOW, 0);
+      const p7 = copyPoint(p1, 0, this.AnbauLaengeNS);
+      const p8 = copyPoint(p0, 0, this.AnbauLaengeNS);
+      const poly = [p0, p1, p2, p3, p4, p5, p6, p7, p8];
+      const pivot = poly[4];
+      return poly.map(p=>rotatePointPivot(p, this.HausDrehWinkel, pivot));
     },
     get PolygonEGInnen() {
       const daw = this.DickeAussenwand;
@@ -256,9 +258,14 @@ function cfgHausDefault() {
         copyPoint(polyAussen[3], daw, daw),
         copyPoint(polyAussen[4], -daw, daw),
         copyPoint(polyAussen[5], -daw, -daw),
-        copyPoint(polyAussen[6], daw, -daw), // 4
-        pkt5, pkt6, pkt7
-      ];
+        copyPoint(polyAussen[6], daw, -daw)];  // 4
+      if(this.AnbauInnenflaeche) {
+        polyHausInnen.push(pkt5);
+        polyHausInnen.push(pkt6);
+        polyHausInnen.push(pkt7);
+      } else {
+        polyHausInnen.push(copyPoint(polyAussen[1], daw, daw));
+      }
       return polyHausInnen;
     },
     get PolygonOGInnen() {
@@ -280,7 +287,6 @@ function cfgHausDefault() {
       const daw = this.DickeAussenwand;
       const diw = this.DickeInnenwand;
       const polyAussen = this.PolygonAussen;
-
 
       const ol = copyPoint(polyAussen[0], daw, daw);    // oben links
       const or = copyPoint(polyAussen[2], -this.AbstAnbauEcke-diw, daw);  // oben rechts
@@ -342,15 +348,20 @@ guiHaus.add(cfgHaus, "zeigeAussenMasse").name("Außenmaße").onChange(v => guiSe
 guiHaus.add(cfgHaus, "zeigeInnenMasse").name("Innenmaße").onChange(v => guiSetter(cfgHaus, "zeigeInnenMasse", v));
 guiHaus.add(cfgHaus, "zeigeOG").name("OG").onChange(v => guiSetter(cfgHaus, "zeigeOG", v));
 guiHaus.add(cfgHaus, "zeigeVeranda").name("Veranda").onChange(v => guiSetter(cfgHaus, "zeigeVeranda", v));
-guiHaus.add(cfgHaus, "AnbauAbstW", 0, 8, 0.05).name("Anbau Abstand West").onChange(v => guiSetter(cfgHaus, "AnbauAbstW", v));
-guiHaus.add(cfgHaus, "AnbauAbstS", -3, 6, 0.05).name("Anbau Abstand Süd").onChange(v => guiSetter(cfgHaus, "AnbauAbstS", v));
-guiHaus.add(cfgHaus, "AnbauLaengeNS", 3, 10, 0.05).name("Anbau Länge Nord Süd").onChange(v => guiSetter(cfgHaus, "AnbauLaengeNS", v));
-
 guiHaus.add(cfgHaus, "HausAbstS", 0, 3, 0.05).name("Haus Abstand Süd").onChange(v => guiSetter(cfgHaus, "HausAbstS", v));
+guiHaus.add(cfgHaus, "HausLaengeNS", 5, 12, 0.05).name("Haus Länge Nord Süd").onChange(v => guiSetter(cfgHaus, "HausLaengeNS", v));
 guiHaus.add(cfgHaus, "HausLaengeOW", 5, 10, 0.05).name("Haus Länge Ost West").onChange(v => guiSetter(cfgHaus, "HausLaengeOW", v));
 guiHaus.add(cfgHaus, "OffsetOW", 0, 6, 0.05).name("Ecke Länge Ost West").onChange(v => guiSetter(cfgHaus, "OffsetOW", v));
-guiHaus.add(cfgHaus, "OffsetNS", 0, 3, 0.05).name("Ecke Länge Nord Süd").onChange(v => guiSetter(cfgHaus, "OffsetNS", v));
-guiHaus.add(cfgHaus, "AbstAnbauEcke", -3, 6, 0.05).name("Abstand Ecke Anbau").onChange(v => guiSetter(cfgHaus, "AbstAnbauEcke", v));
+guiHaus.add(cfgHaus, "OffsetNS", 0, 3, 0.05).name("Einschub Anbau").onChange(v => guiSetter(cfgHaus, "OffsetNS", v));
+const guiAnbau = guiHaus.addFolder("Anbau");
+guiAnbau.open(false);
+guiAnbau.add(cfgHaus, "AnbauLaengeOW", 0, 8, 0.05).name("Anbau Länge Ost West").onChange(v => guiSetter(cfgHaus, "AnbauLaengeOW", v));
+// guiAnbau.add(cfgHaus, "AnbauAbstS", -3, 6, 0.05).name("Anbau Abstand Süd").onChange(v => guiSetter(cfgHaus, "AnbauAbstS", v));
+guiAnbau.add(cfgHaus, "AnbauLaengeNS", 3, 10, 0.05).name("Anbau Länge Nord Süd").onChange(v => guiSetter(cfgHaus, "AnbauLaengeNS", v));
+guiAnbau.add(cfgHaus, "AbstAnbauEcke", -3, 6, 0.05).name("Abstand Ecke Anbau").onChange(v => guiSetter(cfgHaus, "AbstAnbauEcke", v));
+guiAnbau.add(cfgHaus, "AnbauInnenflaeche").name("Innenfläche").onChange(v => guiSetter(cfgHaus, "AnbauInnenflaeche", v));
+
+
 
 const guiDach = guiHaus.addFolder("OG und Dach");
 guiDach.close();
@@ -363,6 +374,7 @@ guiDach.add(cfgHaus, "GaubeOstBreite", 0, 5, 0.1).name("Breite Gaube Ost").onCha
 const guiGrdstck = gui.addFolder("Grundstück");
 guiGrdstck.open(false);
 guiGrdstck.add(cfgGrundstueck, "zeigeHaus").name("Haus").onChange(v => guiSetter(cfgGrundstueck, "zeigeHaus", v));
+guiGrdstck.add(cfgGrundstueck.Baufenster, "show").name("Umriss Baufenster").onChange(v => guiSetter(cfgGrundstueck.Baufenster, "show", v));
 guiGrdstck.add(cfgGrundstueck.Baufenster, "zeigeMasse").name("Maße Baufenster").onChange(v => guiSetter(cfgGrundstueck.Baufenster, "zeigeMasse", v));
 guiGrdstck.add(cfgGrundstueck.AltesHaus, "show").name("Altes Haus").onChange(v => guiSetter(cfgGrundstueck.AltesHaus, "show", v));
 guiGrdstck.add(cfgGrundstueck.Carport, "show").name("Carport").onChange(v => guiSetter(cfgGrundstueck.Carport, "show", v));
@@ -388,7 +400,7 @@ function xcoordFromBGO(x, y=-1) {
   }
   return ret;
 }
-  // y-Koordinate gemessen von der nördlichen Grundstücksgrenze
+// y-Koordinate gemessen von der nördlichen Grundstücksgrenze
 const ycoordFromN = y => y; // drawEnv2D.offsetY + y * drawEnv2D.scale;
 // y-Koordinate gemessen von der südlichen Grundstücksgrenze
 // Nur richtig, wenn das Grundstück rechteckig ist
@@ -559,6 +571,22 @@ function pointInbetween(p1, p2, r) {
 }
 
 const middlePoint = (p1, p2) => pointInbetween(p1, p2, 0.5);
+
+// function rotatePoint(p, phiDeg) {
+//   const phiRad = phiDeg/180*Math.PI;
+//   const c = Math.cos(phiRad);
+//   const s = Math.sin(phiRad);
+//   return new Point(c*p.x - s*p.y, s*p.x + c*p.y);
+// }
+
+function rotatePointPivot(p, phiDeg, pivot) {
+  const phiRad = phiDeg/180*Math.PI;
+  const c = Math.cos(phiRad);
+  const s = Math.sin(phiRad);
+  return new Point(c*p.x - s*p.y + (1-c)*pivot.x + s*pivot.y,
+                   s*p.x + c*p.y - s*pivot.x + (1-c)*pivot.y);
+}
+
 
 function bemassung(p1, p2, pos='t', offset=0.3) {
   let px1 = p1.px;
@@ -922,9 +950,15 @@ function berechneTabellenDaten() {
     const giebelHoehe = berechneGiebelhoehe();
     document.getElementById("GiebelHoehe").innerText
       = giebelHoehe.toFixed(2).toString() + "m";
-    const wflAnbau =areaPolygon(polyAnbauInnen);
-    document.getElementById("InnenflaecheAnbau").innerText
-      = wflAnbau.toFixed(2).toString() + "m²";
+
+    let wflAnbau = 0;
+    if(cfgHaus.AnbauInnenflaeche) {
+      wflAnbau =areaPolygon(polyAnbauInnen);
+      document.getElementById("InnenflaecheAnbau").innerText
+        = wflAnbau.toFixed(2).toString() + "m²";
+    } else {
+      document.getElementById("InnenflaecheAnbau").innerText = "";
+    }
     const wflGesamt = wflOG + wflEG + wflAnbau;
     document.getElementById("InnenflaecheGesamt").innerText
       = wflGesamt.toFixed(2).toString() + "m²";
@@ -1011,7 +1045,7 @@ function zeichne2DGrundstueck() {
       //                                  cfgGrundstueck.Baufenster.AbstBaugrenzeWNord / cfgGrundstueck.OstWestLaengeNordseite);
       const sp = berechneSchnittpunkt(polyBF[0], copyPoint(polyBF[0], cfgGrundstueck.OstWestLaengeNordseite),
                                       cfgGrundstueck.Baufenster.Baugrenze[0],cfgGrundstueck.Baufenster.Baugrenze[1]);
-                                      // nordPunkt, suedPunkt);
+      // nordPunkt, suedPunkt);
 
       bemassung(polyBF[0], sp, 'b');
       bemassung(polyBF[4], polyBF[5], 'b');
@@ -1052,29 +1086,45 @@ function zeichne2DHaus() {
   const mp78 = middlePoint(polyAussen[7], polyAussen[8]);
 
   if(cfgGrundstueck.zeigeHaus && cfgHaus.zeigeAussenMasse) {
-    bemassung(polyAussen[0], polyAussen[8], 'l');
-    if(cfgHaus.OffsetNS>0.05) {
-      bemassung(polyAussen[0], polyAussen[2], 't');
-      bemassung(polyAussen[2], polyAussen[3], 'r');
-      bemassung(polyAussen[3], polyAussen[4], 't');
-    } else {
-      bemassung(polyAussen[0], polyAussen[4], 't');
-    }
+    // Die hier brauchen wir auf jeden Fall
+    bemassung(polyAussen[5], polyAussen[6], 'b');
     bemassung(polyAussen[4], polyAussen[5], 'r');
-    bemassung(polyAussen[5], polyAussen[6], 't');
-    bemassung(polyAussen[6], polyAussen[7], 'l');
+    // Nur bei Anbau
+    if(cfgHaus.AnbauLaengeOW > 0) {
+      bemassung(polyAussen[0], polyAussen[8], 'l');
+      bemassung(polyAussen[6], polyAussen[7], 'l');
+      bemassung(polyAussen[7], polyAussen[8], 'b');
+      if(Math.abs(cfgHaus.OffsetNS)<0.01 && cfgHaus.AnbauLaengeOW > 0) {
+        // Anbau ohne Ecke
+        bemassung(polyAussen[0], polyAussen[4], 't');
+        // const yy = Math.min(polyAussen[0].y, polyAussen[4].y);
+        // bemassung(new Point(polyAussen[0].x, yy), new Point(polyAussen[4].x, yy), 't');
+      }
+    }
+    // Mit Ecke
+    if(Math.abs(cfgHaus.OffsetNS)>0.01) {
+      bemassung(polyAussen[3], polyAussen[4], 't');
+      bemassung(polyAussen[2], polyAussen[3], 'r');
+    }
 
     // Abstände zur Südgrenze des Grundstücks
     let sp = berechneSchnittpunkt(cfgGrundstueck.Polygon[2], cfgGrundstueck.Polygon[3],
                                   polyAussen[6], copyPoint(polyAussen[6], 0, cfgGrundstueck.NordSuedLaengeWestseite));
     bemassung(sp, polyAussen[6], 'r', 0);
     sp = berechneSchnittpunkt(cfgGrundstueck.Polygon[2], cfgGrundstueck.Polygon[3],
-                                  polyAussen[5], copyPoint(polyAussen[5], 0, cfgGrundstueck.NordSuedLaengeWestseite));
+                              polyAussen[5], copyPoint(polyAussen[5], 0, cfgGrundstueck.NordSuedLaengeWestseite));
     bemassung(sp, polyAussen[5], 'l', 0);
 
-    bemassung(polyAussen[8], new Point(0, polyAussen[8].y), 't');
-    bemassung(mp78, new Point(mp78.x, ycoordFromS(0)), 'r');
-    bemassung(mp67, new Point(xcoordFromW(0), mp67.y), 't');
+    // Abstand zur Westgrenze
+    bemassung(polyAussen[8], new Point(0, polyAussen[8].y), 't', 0);
+    if(Math.abs(cfgHaus.HausDrehWinkel)>0.001) {
+      bemassung(polyAussen[0], new Point(0, polyAussen[0].y), 't', 0);
+    }
+    if(cfgHaus.AnbauLaengeOW > 0) {
+      bemassung(polyAussen[6], new Point(0, polyAussen[6].y), 't', 0);
+      // bemassung(mp67, new Point(xcoordFromW(0), mp67.y), 't');
+      bemassung(mp78, new Point(mp78.x, ycoordFromS(0)), 'r');
+    }
     const mp34 = middlePoint(polyAussen[3], polyAussen[4]);
     bemassung(mp34, new Point(mp34.x, ycoordFromN(0)), 'r');
     if(cfgGrundstueck.zeigeBaeume) {
@@ -1083,9 +1133,9 @@ function zeichne2DHaus() {
       const tmpPoint = new Point(kastanieSued.x, polyAussen[0].y);
       bemassung(tmpPoint, kastanieSued, 'r', 0);
       // Abstand zur Hausecke
-      if(cfgHaus.OffsetNS>0.05) {
+      // if(Math.abs(cfgHaus.OffsetNS)>0.01) {
         bemassung(polyAussen[3], kastanieSued, 't', 0);
-      }
+      // }
     }
   }
 
@@ -1115,10 +1165,12 @@ function zeichne2DHaus() {
       drawPolygon(polyHausInnenOG, cfgHaus.colOG, 0.6);
     }
     if(cfgHaus.zeigeInnenMasse) {
-      bemassung(polyHausInnenEG[0], polyHausInnenEG[7], 'b');
       bemassung(polyHausInnenEG[3], polyHausInnenEG[4], 't');
       bemassung(polyHausInnenEG[2], polyHausInnenEG[3], 'l');
-      bemassung(polyHausInnenEG[6], new Point(polyHausInnenEG[3].x, polyHausInnenEG[6].y), 't');
+      if(cfgHaus.AnbauInnenflaeche) {
+        bemassung(polyHausInnenEG[0], polyHausInnenEG[7], 'b');
+        bemassung(polyHausInnenEG[6], new Point(polyHausInnenEG[3].x, polyHausInnenEG[6].y), 't');
+      }
     }
   }
   const wflEG = areaPolygon(polyHausInnenEG);
@@ -1178,20 +1230,36 @@ function zeichne2DHaus() {
   const polyAnbauInnen = cfgHaus.PolygonAnbauInnen;
 
   if (cfgGrundstueck.zeigeHaus) {
-    drawPolygon(polyAnbauInnen, cfgHaus.colEG, 0.6);
-    if(cfgHaus.zeigeInnenMasse) {
-      bemassung(polyAnbauInnen[0], polyAnbauInnen[1], 'b');
-      bemassung(polyAnbauInnen[0], polyAnbauInnen[3], 'r');
+    if(cfgHaus.AnbauInnenflaeche) {
+      drawPolygon(polyAnbauInnen, cfgHaus.colEG, 0.6);
+      if(cfgHaus.zeigeInnenMasse) {
+        bemassung(polyAnbauInnen[0], polyAnbauInnen[1], 'b');
+        bemassung(polyAnbauInnen[0], polyAnbauInnen[3], 'r');
+      }
+    } else {
+      drawPolygon([polyAussen[1], polyAussen[7]], cfgHaus.colEG, 1.2);
     }
   }
 
   const wflAnbau =areaPolygon(polyAnbauInnen);
   if (cfgGrundstueck.zeigeHaus) {
-    const comAnbauInnen = comPolygon(polyAnbauInnen);
+    if(cfgHaus.AnbauInnenflaeche) {
+      const comAnbauInnen = comPolygon(polyAnbauInnen);
 
-    drawEnv2D.ctx2D.fillStyle = cfgHaus.colEG;
-    let str = wflAnbau.toFixed(1).toString() + "m²";
-    drawEnv2D.ctx2D.fillText(str, comAnbauInnen.px, comAnbauInnen.py);
+      drawEnv2D.ctx2D.fillStyle = cfgHaus.colEG;
+      let str = wflAnbau.toFixed(1).toString() + "m²";
+      drawEnv2D.ctx2D.fillText(str, comAnbauInnen.px, comAnbauInnen.py);
+    } else {
+      if(cfgHaus.AnbauLaengeOW) {
+        // Anbau ohne Innenflaeche = Balkon
+        const polyBalkon = [polyAussen[0], polyAussen[1], polyAussen[7], polyAussen[8]];
+        const comBalkon = comPolygon(polyBalkon);
+        const flBalkon = areaPolygon(polyBalkon);
+        drawEnv2D.ctx2D.fillStyle = cfgHaus.colEG;
+        let str = flBalkon.toFixed(1).toString() + "m²";
+        drawEnv2D.ctx2D.fillText(str, comBalkon.px, comBalkon.py);
+      }
+    }
   }
 }
 
