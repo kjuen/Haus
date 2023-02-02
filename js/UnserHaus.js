@@ -1,9 +1,10 @@
 /* global lil */
 
 // TODO:
-// - zeichne2DHaus aufräumen
+// - Die ungleichmäßige Abstandsfläche nach Süden berechnen!
+// - Die Gaubenpolygon mussen noch rotiert werden
 // - GUI fuer Seitenansicht verbessern
-// 3D-Haus zeichnen
+// - 3D-Haus zeichnen
 console.log('Hier wird unser Haus gebaut');
 
 // * Konfiguration
@@ -87,7 +88,6 @@ function cfgGrundstueckDefault() {
       //                                  cfgGrundstueck.Baufenster.AbstBaugrenzeWNord / cfgGrundstueck.OstWestLaengeNordseite);
 
       Baugrenze: [new Point(16.22, 0), new Point(16.8, 17.4149)],
-      BaugrenzeDrehwinkel: 1.91,   // in Grad
       AbstBaugrenzeWSued: 16.80,
       AbstBaugrenzeWNord: 16.22,
       GrenzAbstand: 2.5,
@@ -191,7 +191,7 @@ function cfgHausDefault() {
     zeigeOG: false,
     colEG: "Green",
     colOG: "LightGreen",
-    HausDrehWinkel: 0, // -1.91,
+    HausDrehWinkel: -1.91,  // in Grad
     HausLaengeOW: 8.00,
     get HausLaengeInnenOW() {
       return this.HausLaengeOW - 2 * this.DickeAussenwand;
@@ -201,10 +201,10 @@ function cfgHausDefault() {
     HausLaengeNS: 9.5,
     OffsetNS: 0.8,
     OffsetOW: 0,
-    AnbauLaengeOW: 5.75,
+    AnbauLaengeOW: 2.5,
     // AnbauAbstW: 0,
     // AnbauAbstS: 4.25,
-    AnbauLaengeNS: 5.70,
+    AnbauLaengeNS: 3.50,
     DickeAussenwand: 0.4,
     DickeInnenwand: 0.2,
     DickeInnenwand: 0.2,
@@ -1134,7 +1134,7 @@ function zeichne2DHaus() {
       bemassung(tmpPoint, kastanieSued, 'r', 0);
       // Abstand zur Hausecke
       // if(Math.abs(cfgHaus.OffsetNS)>0.01) {
-        bemassung(polyAussen[3], kastanieSued, 't', 0);
+      bemassung(polyAussen[3], kastanieSued, 't', 0);
       // }
     }
   }
@@ -1278,37 +1278,39 @@ function zeichne2DAltesHaus() {
 
     drawEnv2D.ctx2D.translate(68, -10); drawEnv2D.ctx2D.rotate(-Math.PI / 180 * 2);
     drawPolygon(cfgGrundstueck.AltesHaus.Polygon, 'gray', 1);
-    const polyNeuerAnbau = cfgGrundstueck.AltesHaus.PolygonNeuerAnbau;
-    drawPolygon(cfgGrundstueck.AltesHaus.PolygonNeuerAnbau, cfgHaus.colEG, 1, [2,3]);
 
+    const bemassungAltesHaus = false;
+    if(bemassungAltesHaus) {
+      // bemassung ruft setStdTransformState auf. Daher muss man immer wieder translate und rotate setzen
+      bemassung(cfgGrundstueck.AltesHaus.Polygon[0], cfgGrundstueck.AltesHaus.Polygon[1], 'r');
+      drawEnv2D.ctx2D.translate(68, -10); drawEnv2D.ctx2D.rotate(-Math.PI / 180 * 2);
+      bemassung(cfgGrundstueck.AltesHaus.Polygon[1], cfgGrundstueck.AltesHaus.Polygon[2], 'b');
+      drawEnv2D.ctx2D.translate(68, -10); drawEnv2D.ctx2D.rotate(-Math.PI / 180 * 2);
+    }
+    const altesHausNeuerAnbau = false;
 
-    // bemassung ruft setStdTransformState auf. Daher muss man immer wieder translate und rotate setzen
-    bemassung(cfgGrundstueck.AltesHaus.Polygon[0], cfgGrundstueck.AltesHaus.Polygon[1], 'r');
-    drawEnv2D.ctx2D.translate(68, -10); drawEnv2D.ctx2D.rotate(-Math.PI / 180 * 2);
-    bemassung(cfgGrundstueck.AltesHaus.Polygon[1], cfgGrundstueck.AltesHaus.Polygon[2], 'b');
-    drawEnv2D.ctx2D.translate(68, -10); drawEnv2D.ctx2D.rotate(-Math.PI / 180 * 2);
-    bemassung(cfgGrundstueck.AltesHaus.PolygonNeuerAnbau[1], cfgGrundstueck.AltesHaus.PolygonNeuerAnbau[2], 'l');
-    drawEnv2D.ctx2D.translate(68, -10); drawEnv2D.ctx2D.rotate(-Math.PI / 180 * 2);
-    bemassung(cfgGrundstueck.AltesHaus.PolygonNeuerAnbau[2], cfgGrundstueck.AltesHaus.PolygonNeuerAnbau[3], 't');
-    drawEnv2D.ctx2D.translate(68, -10); drawEnv2D.ctx2D.rotate(-Math.PI / 180 * 2);
-    bemassung(cfgGrundstueck.AltesHaus.PolygonNeuerAnbau[3], cfgGrundstueck.AltesHaus.PolygonNeuerAnbau[4], 'r');
-
-    // console.log('Fläche neuer Anbau=', areaPolygon(cfgGrundstueck.AltesHaus.PolygonNeuerAnbau));
-    // console.log('Fläche altes Haus ohne Anbau=', areaPolygon(cfgGrundstueck.AltesHaus.PolygonOhneAnbau));
     const polyOhneAnbau = cfgGrundstueck.AltesHaus.PolygonOhneAnbau;
     const flOhneAnbau = areaPolygon(polyOhneAnbau);
     const comOhneAnbau = comPolygon(polyOhneAnbau);
     drawEnv2D.ctx2D.fillStyle = "gray";
     let str = "Ohne Anbau: " + flOhneAnbau.toFixed(1).toString() + "m²";
     drawEnv2D.ctx2D.fillText(str, comOhneAnbau.px + 50, comOhneAnbau.py-10);
-
-    const flNeuerAnbau = areaPolygon(polyNeuerAnbau);
-    const comNeuerAnbau = comPolygon(polyNeuerAnbau);
-    drawEnv2D.ctx2D.fillStyle = cfgHaus.colEG;
-    str = "Neuer Anbau: " + flNeuerAnbau.toFixed(1).toString() + "m²";
-    drawEnv2D.ctx2D.fillText(str, comNeuerAnbau.px + 50, comNeuerAnbau.py-40);
-
-
+    if(altesHausNeuerAnbau) {
+      const polyNeuerAnbau = cfgGrundstueck.AltesHaus.PolygonNeuerAnbau;
+      drawPolygon(cfgGrundstueck.AltesHaus.PolygonNeuerAnbau, cfgHaus.colEG, 1, [2,3]);
+      bemassung(cfgGrundstueck.AltesHaus.PolygonNeuerAnbau[1], cfgGrundstueck.AltesHaus.PolygonNeuerAnbau[2], 'l');
+      drawEnv2D.ctx2D.translate(68, -10); drawEnv2D.ctx2D.rotate(-Math.PI / 180 * 2);
+      bemassung(cfgGrundstueck.AltesHaus.PolygonNeuerAnbau[2], cfgGrundstueck.AltesHaus.PolygonNeuerAnbau[3], 't');
+      drawEnv2D.ctx2D.translate(68, -10); drawEnv2D.ctx2D.rotate(-Math.PI / 180 * 2);
+      bemassung(cfgGrundstueck.AltesHaus.PolygonNeuerAnbau[3], cfgGrundstueck.AltesHaus.PolygonNeuerAnbau[4], 'r');
+      console.log('Fläche neuer Anbau=', areaPolygon(cfgGrundstueck.AltesHaus.PolygonNeuerAnbau));
+      console.log('Fläche altes Haus ohne Anbau=', areaPolygon(cfgGrundstueck.AltesHaus.PolygonOhneAnbau));
+      const flNeuerAnbau = areaPolygon(polyNeuerAnbau);
+      const comNeuerAnbau = comPolygon(polyNeuerAnbau);
+      drawEnv2D.ctx2D.fillStyle = cfgHaus.colEG;
+      str = "Neuer Anbau: " + flNeuerAnbau.toFixed(1).toString() + "m²";
+      drawEnv2D.ctx2D.fillText(str, comNeuerAnbau.px + 50, comNeuerAnbau.py-40);
+    }
     drawEnv2D.setStdTransformState();
 
     // Eigene Messung Dez. 2022
