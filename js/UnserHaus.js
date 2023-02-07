@@ -1,5 +1,8 @@
 /* global lil */
 
+// FIXME:
+// wenn man den Haustyp ändert, werden die lil-gui-Slider nicht auf den passenden Wert gestellt!!
+
 // TODO:
 // - Anteil Fläche OG über 2.20 (oder 2.30) ausrechnen (darf nicht mehr als Fläche EG sein, aber ist das bebaute Fläche oder Wohnfläche?)
 // - Hausgrößen vorkonfigurieren
@@ -233,7 +236,7 @@ function cfgHausDefault() {
     get HausLaengeInnenOW() {
       return this.HausLaengeOW - 2 * this.DickeAussenwand;
     },
-    HausAbstO: 0,
+    HausAbstO: 0.0,
     HausAbstS: 0.75,
     HausLaengeNS: 9.5,
     OffsetNS: 0.0,
@@ -388,6 +391,10 @@ function initCfg() {
 initCfg();
 
 
+
+
+
+
 // * lil-gui
 function guiSetter(cfgObject, fieldName, value) {
   cfgObject[fieldName] = value;
@@ -407,9 +414,11 @@ guiHaus.add(cfgHaus, "HausTyp", Array.from(Haustypen.keys())).name("Haus Typ").o
   updateAll();
 });
 
-guiHaus.add(cfgHaus, "HausAbstS", 0, 3, 0.05).name("Haus Abstand Süd").onChange(v => guiSetter(cfgHaus, "HausAbstS", v));
+guiHaus.add(cfgHaus, "HausAbstS", 0, 4, 0.05).name("Haus Abstand Süd").onChange(v => guiSetter(cfgHaus, "HausAbstS", v));
+guiHaus.add(cfgHaus, "HausAbstO", -1, 2, 0.05).name("Haus Abstand Ost").onChange(v => guiSetter(cfgHaus, "HausAbstO", v));
 guiHaus.add(cfgHaus, "HausLaengeNS", 5, 12, 0.05).name("Haus Länge Nord Süd").onChange(v => guiSetter(cfgHaus, "HausLaengeNS", v));
-guiHaus.add(cfgHaus, "HausLaengeOW", 5, 10, 0.05).name("Haus Länge Ost West").onChange(v => guiSetter(cfgHaus, "HausLaengeOW", v));
+guiHaus.add(cfgHaus, "HausLaengeOW", 5, 14, 0.05).name("Haus Länge Ost West").onChange(v => guiSetter(cfgHaus, "HausLaengeOW", v));
+guiHaus.add(cfgHaus, "HausDrehWinkel", -4, 1, 0.05).name("Haus Drehwinkel").onChange(v => guiSetter(cfgHaus, "HausDrehWinkel", v));
 guiHaus.add(cfgHaus, "OffsetOW", 0, 6, 0.05).name("Ecke Länge Ost West").onChange(v => guiSetter(cfgHaus, "OffsetOW", v));
 const guiAnbau = guiHaus.addFolder("Anbau");
 guiAnbau.open(false);
@@ -578,6 +587,25 @@ function comPolygon(vertexArray) {
 }
 
 
+function berechneWinkelGrad(v1, v2) {
+  // v1, v2: Arrays der Länge 2 mit Point-Objekten
+  const x1 = v1[0].x - v1[1].x;
+  const y1 = v1[0].y - v1[1].y;
+
+  const x2 = v2[0].x - v2[1].x;
+  const y2 = v2[0].y - v2[1].y;
+
+
+  const len1 = Math.sqrt(x1*x1+y1*y1);
+  const len2 = Math.sqrt(x2*x2+y2*y2);
+  const dotProd = x1*x2 + y1*y2;
+
+  const rad = Math.acos(dotProd/(len1*len2));
+  return rad / Math.PI * 180;
+}
+// const v1 = [new Point(0,0), new Point(1,0)];
+// const v2 = [new Point(0,0), new Point(1,1)];
+// console.log('berechneWinkelGrad(v1, v2)=', berechneWinkelGrad(v1,v2));
 
 
 
@@ -1036,6 +1064,12 @@ function berechneTabellenDaten() {
 
 // Grundstueck
 function zeichne2DGrundstueck() {
+  // Winkel-Berechnung
+  const WinkelBaugrenzeNord = 90 + berechneWinkelGrad(cfgGrundstueck.Baufenster.Baugrenze, [new Point(0,0), new Point(0,1)]);
+  console.log('WinkelBaugrenze Nord', WinkelBaugrenzeNord);
+  const WinkelBaugrenzeSued = 360 - (90 + WinkelBaugrenzeNord + 90.71);   // 90.71 stammt vom Vermesser
+  console.log('WinkelBaugrenze Süd=', WinkelBaugrenzeSued);
+
   const polyGrdst = cfgGrundstueck.Polygon;
   drawPolygon(polyGrdst, "black", 1);
   if(cfgGrundstueck.zeigeMasse) {
@@ -1171,12 +1205,22 @@ function zeichne2DHaus() {
     }
 
     // Abstände zur Südgrenze des Grundstücks
+    // Bemassung an der Mitte der Südkante des Hauses
+    const mp = middlePoint(polyAussen[5], polyAussen[6]);
     let sp = berechneSchnittpunkt(cfgGrundstueck.Polygon[2], cfgGrundstueck.Polygon[3],
-                                  polyAussen[6], copyPoint(polyAussen[6], 0, cfgGrundstueck.NordSuedLaengeWestseite));
-    bemassung(sp, polyAussen[6], 'r', 0);
-    sp = berechneSchnittpunkt(cfgGrundstueck.Polygon[2], cfgGrundstueck.Polygon[3],
-                              polyAussen[5], copyPoint(polyAussen[5], 0, cfgGrundstueck.NordSuedLaengeWestseite));
-    bemassung(sp, polyAussen[5], 'l', 0);
+                                  mp, copyPoint(mp, 0, cfgGrundstueck.NordSuedLaengeWestseite));
+    bemassung(sp, mp, 'r', 0);
+
+    // Bemassung an den Südecken des Hauses
+    // let sp = berechneSchnittpunkt(cfgGrundstueck.Polygon[2], cfgGrundstueck.Polygon[3],
+    //                               polyAussen[6], copyPoint(polyAussen[6], 0, cfgGrundstueck.NordSuedLaengeWestseite));
+    // bemassung(sp, polyAussen[6], 'r', 0);
+    // sp = berechneSchnittpunkt(cfgGrundstueck.Polygon[2], cfgGrundstueck.Polygon[3],
+    //                           polyAussen[5], copyPoint(polyAussen[5], 0, cfgGrundstueck.NordSuedLaengeWestseite));
+    // bemassung(sp, polyAussen[5], 'l', 0);
+
+
+
 
     // Abstand zur Westgrenze
     bemassung(polyAussen[6], new Point(0, polyAussen[6].y), 't', 0);
@@ -1369,8 +1413,8 @@ function zeichne2DAltesHaus() {
     const flOhneAnbau = areaPolygon(polyOhneAnbau);
     const comOhneAnbau = comPolygon(polyOhneAnbau);
     drawEnv2D.ctx2D.fillStyle = "gray";
-    let str = "Ohne Anbau: " + flOhneAnbau.toFixed(1).toString() + "m²";
-    drawEnv2D.ctx2D.fillText(str, comOhneAnbau.px + 50, comOhneAnbau.py-10);
+    // let str = "Ohne Anbau: " + flOhneAnbau.toFixed(1).toString() + "m²";
+    // drawEnv2D.ctx2D.fillText(str, comOhneAnbau.px + 50, comOhneAnbau.py-10);
     if(altesHausNeuerAnbau) {
       const polyNeuerAnbau = cfgGrundstueck.AltesHaus.PolygonNeuerAnbau;
       drawPolygon(cfgGrundstueck.AltesHaus.PolygonNeuerAnbau, cfgHaus.colEG, 1, [2,3]);
