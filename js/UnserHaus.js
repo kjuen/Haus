@@ -1,7 +1,7 @@
 /* global lil */
 
 // FIXME:
-// wenn man den Haustyp ändert, werden die lil-gui-Slider nicht auf den passenden Wert gestellt!!
+// - Die Bemassung von KastinieSued nach Sueden passt nicht genau
 
 // TODO:
 // - Anteil Fläche OG über 2.20 (oder 2.30) ausrechnen (darf nicht mehr als Fläche EG sein, aber ist das bebaute Fläche oder Wohnfläche?)
@@ -68,9 +68,6 @@ function drawEnv2DSeitenansichten() {
   };
 };
 
-
-
-
 function cfgGrundstueckDefault() {
   return {
     zeigeMasse: false,
@@ -109,10 +106,10 @@ function cfgGrundstueckDefault() {
       // |               |
       // 5---------------4
       get Polygon() {
-        const abst0N = 5;
-        const abst05 = 10;
-        const abst12 = 1;
-        const abst23 = 7.03;
+        const abst0N = 4.54;
+        // const abst05 = 10.3;
+        const abst12 = 0.8;
+        const abst23 = 6.78;
         const p0 = new Point(xcoordFromW(this.GrenzAbstand), abst0N);
         const p1x =  xcoordFromBGO(abst23, abst0N);
         const p1 = new Point(p1x, abst0N);
@@ -132,9 +129,9 @@ function cfgGrundstueckDefault() {
       AbstW: 4.95     // selber aus der Zeichnung vom Vermesser rausgelesen
     },
     Eiche: {
-      Radius: 0.6,
-      AbstN: 17.4 + 1.5,
-      AbstW: 18
+      Radius: 0.54,
+      AbstN: 17.4 + 1.16,
+      AbstW: 16.8 + 1.85
     },
     WegAlt: {
       show: false,
@@ -150,11 +147,16 @@ function cfgGrundstueckDefault() {
     Carport: {
       show: false,
       get Polygon() {
-        const p1 = new Point(xcoordFromBGO(-12.5), 5);
-        const p2 = new Point(xcoordFromBGO(-14.05), 14);
-        const p3 = copyPoint(p2, -3, 0);
-        const p4 = copyPoint(p1, -3, 0);
-        return [p1, p2, p3, p4];
+        const or = new Point(xcoordFromBGO(-12.78), 5);  // oben rechts
+        const ol = copyPoint(or, -3, 0);
+        const ml = copyPoint(ol, 0, 5);
+        const ml2 = copyPoint(ml, -1, 0);
+        const ul = copyPoint(ml2, 0, 4);
+        const ur = copyPoint(or, 0, 9);   // unten rechts
+
+
+        const poly = [or, ol, ml, ml2, ul, ur];
+        return poly.map(p=>rotatePointPivot(p, -9.6, or));
       }
     },
     AltesHaus: {
@@ -191,9 +193,13 @@ function cfgGrundstueckDefault() {
 
 
 
-function setHaustyp(cfgObj, haustypObj) {
+function setHaustyp(cfgObj, haustypObj, parentController) {
   for(let f in haustypObj) {
     cfgObj[f] = haustypObj[f];
+    const contr = getControllerByName(parentController, f);
+    if(contr !== undefined) {
+      contr.setValue(haustypObj[f]);
+    }
   }
 }
 
@@ -203,19 +209,77 @@ Haustypen.set("Kein Typ", {});
 Haustypen.set("Talis 80D", {
   HausLaengeOW: 8.00,
   HausLaengeNS: 10.00,
+  OffsetNS: 0.0,
+  OffsetOW: 0.0,
+  AnbauLaengeOW: 0,
+  AnbauInnenflaeche: false,
 });
+Haustypen.set("Talis 80D mit Anbau", {
+  HausLaengeOW: 8.00,
+  HausLaengeNS: 10.00,
+  OffsetNS: 0.0,
+  OffsetOW: 0.0,
+  HausAbstS: 0.7,
+  AnbauLaengeOW: 5.85,
+  AnbauInnenflaeche: true,
+});
+Haustypen.set("Talis 106D", {
+  HausLaengeOW: 13.25,
+  HausLaengeNS: 8.00,
+  OffsetNS: 0.0,
+  OffsetOW: 0.0,
+  HausAbstS: 2.2,
+  AnbauLaengeOW: 0.0,
+  AnbauInnenflaeche: false
+});
+
 Haustypen.set("Akost Arne 100", {
   HausLaengeOW: 7.62,
   HausLaengeNS: 9.18,
+  OffsetNS: 0.0,
+  OffsetOW: 0.0,
+  AnbauLaengeOW: 0,
+  AnbauInnenflaeche: false
+});
+Haustypen.set("Akost Frode (schmal)", {
+  HausLaengeOW: 13.86 - 0.5,  // 0.5 schmaler würde es passen
+  HausLaengeNS: 8.81,
+  OffsetNS: 0.0,
+  OffsetOW: 0.0,
+  AnbauLaengeOW: 0.0,
+  HausAbstS: 1.5,
+  GaubeOstBreite: 0.0,
+  GaubeWestBreite: 0.0,
+  AnbauInnenflaeche: false,
 });
 Haustypen.set("Noah Vermont", {
   HausLaengeOW: 8.58,
   HausLaengeNS: 10,
+  OffsetNS: 0.0,
+  OffsetOW: 0.0,
+  AnbauLaengeOW: 0,
+  HausAbstS: 0.8,
+  AnbauInnenflaeche: false
 });
 Haustypen.set("Dammann Imke", {
   HausLaengeOW: 10.4,
   HausLaengeNS: 8.5,
-  HausAbstS: 1.8
+  HausAbstS: 2,
+  OffsetNS: 0.0,
+  OffsetOW: 0.0,
+  AnbauLaengeOW: 0,
+  AnbauInnenflaeche: false
+});
+
+Haustypen.set("Dammann Isa", {
+  HausLaengeOW: 8.12,
+  HausLaengeNS: 8.87,
+  HausAbstS: 1.5,
+  OffsetNS: 0.0,
+  OffsetOW: 0.0,
+  AnbauLaengeOW: 5,
+  AbstAnbauEcke: -0.37,
+  AnbauInnenflaeche: true
 });
 
 
@@ -226,6 +290,7 @@ function cfgHausDefault() {
     zeigeVeranda: false,
     zeigeAussenMasse: true,
     zeigeInnenMasse: false,
+    zeigeFlaechenWerte: true,
     zeigeOG: false,
     colEG: "Green",
     colOG: "LightGreen",
@@ -238,18 +303,15 @@ function cfgHausDefault() {
     },
     HausAbstO: 0.0,
     HausAbstS: 0.75,
-    HausLaengeNS: 9.5,
-    OffsetNS: 0.0,
-    OffsetOW: 0,
-    AnbauLaengeOW: 0,
-    // AnbauAbstW: 0,
-    // AnbauAbstS: 4.25,
-    AnbauLaengeNS: 3.50,
-    DickeAussenwand: 0.4,
+    HausLaengeNS: 10.25,
+    OffsetNS: 1.0,
+    OffsetOW: 1.0,
+    AnbauLaengeOW: 5.8,
+    AnbauLaengeNS: 5.50,
+    DickeAussenwand: 0.37,
     DickeInnenwand: 0.2,
-    DickeInnenwand: 0.2,
-    AbstAnbauEcke: -0.4,  // 2.6
-    AnbauInnenflaeche: false,
+    AbstAnbauEcke: -2.5,  // 2.6
+    AnbauInnenflaeche: true,
     // Punkt 1 ist doch überflüssig!
     //          3-------4
     //          |       |
@@ -396,6 +458,15 @@ initCfg();
 
 
 // * lil-gui
+function getControllerByName(parentController, name) {
+  for(let controller of parentController.children) {
+    if(controller.property === name) {
+      return controller;
+    }
+  }
+  return undefined;
+}
+
 function guiSetter(cfgObject, fieldName, value) {
   cfgObject[fieldName] = value;
   updateAll();
@@ -410,23 +481,23 @@ guiHaus.add(cfgHaus, "zeigeInnenMasse").name("Innenmaße").onChange(v => guiSett
 guiHaus.add(cfgHaus, "zeigeOG").name("OG").onChange(v => guiSetter(cfgHaus, "zeigeOG", v));
 guiHaus.add(cfgHaus, "zeigeVeranda").name("Veranda").onChange(v => guiSetter(cfgHaus, "zeigeVeranda", v));
 guiHaus.add(cfgHaus, "HausTyp", Array.from(Haustypen.keys())).name("Haus Typ").onChange(v=>{
-  setHaustyp(cfgHaus, Haustypen.get(v));
+  setHaustyp(cfgHaus, Haustypen.get(v), guiHaus);
   updateAll();
 });
 
-guiHaus.add(cfgHaus, "HausAbstS", 0, 4, 0.05).name("Haus Abstand Süd").onChange(v => guiSetter(cfgHaus, "HausAbstS", v));
-guiHaus.add(cfgHaus, "HausAbstO", -1, 2, 0.05).name("Haus Abstand Ost").onChange(v => guiSetter(cfgHaus, "HausAbstO", v));
-guiHaus.add(cfgHaus, "HausLaengeNS", 5, 12, 0.05).name("Haus Länge Nord Süd").onChange(v => guiSetter(cfgHaus, "HausLaengeNS", v));
-guiHaus.add(cfgHaus, "HausLaengeOW", 5, 14, 0.05).name("Haus Länge Ost West").onChange(v => guiSetter(cfgHaus, "HausLaengeOW", v));
-guiHaus.add(cfgHaus, "HausDrehWinkel", -4, 1, 0.05).name("Haus Drehwinkel").onChange(v => guiSetter(cfgHaus, "HausDrehWinkel", v));
-guiHaus.add(cfgHaus, "OffsetOW", 0, 6, 0.05).name("Ecke Länge Ost West").onChange(v => guiSetter(cfgHaus, "OffsetOW", v));
+guiHaus.add(cfgHaus, "HausAbstS", 0, 4, 0.01).name("Haus Abstand Süd").onChange(v => guiSetter(cfgHaus, "HausAbstS", v));
+guiHaus.add(cfgHaus, "HausAbstO", -1, 5, 0.05).name("Haus Abstand Ost").onChange(v => guiSetter(cfgHaus, "HausAbstO", v));
+guiHaus.add(cfgHaus, "HausLaengeNS", 5, 12, 0.01).name("Haus Länge Nord Süd").onChange(v => guiSetter(cfgHaus, "HausLaengeNS", v));
+guiHaus.add(cfgHaus, "HausLaengeOW", 5, 14, 0.01).name("Haus Länge Ost West").onChange(v => guiSetter(cfgHaus, "HausLaengeOW", v));
+guiHaus.add(cfgHaus, "HausDrehWinkel", -4, 1, 0.01).name("Haus Drehwinkel").onChange(v => guiSetter(cfgHaus, "HausDrehWinkel", v));
+guiHaus.add(cfgHaus, "OffsetOW", 0, 6, 0.01).name("Ecke Länge Ost West").onChange(v => guiSetter(cfgHaus, "OffsetOW", v));
 const guiAnbau = guiHaus.addFolder("Anbau");
 guiAnbau.open(false);
-guiAnbau.add(cfgHaus, "OffsetNS", 0, 3, 0.05).name("Einschub Anbau").onChange(v => guiSetter(cfgHaus, "OffsetNS", v));
-guiAnbau.add(cfgHaus, "AnbauLaengeOW", 0, 8, 0.05).name("Anbau Länge Ost West").onChange(v => guiSetter(cfgHaus, "AnbauLaengeOW", v));
+guiAnbau.add(cfgHaus, "OffsetNS", 0, 3, 0.01).name("Einschub Anbau").onChange(v => guiSetter(cfgHaus, "OffsetNS", v));
+guiAnbau.add(cfgHaus, "AnbauLaengeOW", 0, 8, 0.01).name("Anbau Länge Ost West").onChange(v => guiSetter(cfgHaus, "AnbauLaengeOW", v));
 // guiAnbau.add(cfgHaus, "AnbauAbstS", -3, 6, 0.05).name("Anbau Abstand Süd").onChange(v => guiSetter(cfgHaus, "AnbauAbstS", v));
-guiAnbau.add(cfgHaus, "AnbauLaengeNS", 3, 10, 0.05).name("Anbau Länge Nord Süd").onChange(v => guiSetter(cfgHaus, "AnbauLaengeNS", v));
-guiAnbau.add(cfgHaus, "AbstAnbauEcke", -3, 6, 0.05).name("Abstand Ecke Anbau").onChange(v => guiSetter(cfgHaus, "AbstAnbauEcke", v));
+guiAnbau.add(cfgHaus, "AnbauLaengeNS", 3, 10, 0.01).name("Anbau Länge Nord Süd").onChange(v => guiSetter(cfgHaus, "AnbauLaengeNS", v));
+guiAnbau.add(cfgHaus, "AbstAnbauEcke", -3, 6, 0.01).name("Abstand Ecke Anbau").onChange(v => guiSetter(cfgHaus, "AbstAnbauEcke", v));
 guiAnbau.add(cfgHaus, "AnbauInnenflaeche").name("Innenfläche").onChange(v => guiSetter(cfgHaus, "AnbauInnenflaeche", v));
 
 
@@ -761,7 +832,7 @@ function drawGrid(xOffset, yOffset, gridSize, lw, col) {
   drawEnv2D.ctx2D.stroke();
 }
 
-function drawTree(cfgObj, circ) {
+function drawTree(cfgObj, circ1, circ2=0) {
   drawEnv2D.ctx2D.fillStyle = "SaddleBrown";
   const center = new Point(cfgObj.AbstW, cfgObj.AbstN);
   drawEnv2D.ctx2D.beginPath();
@@ -772,9 +843,20 @@ function drawTree(cfgObj, circ) {
   drawEnv2D.ctx2D.lineWidth = 0.5;
   drawEnv2D.ctx2D.setLineDash([4,5]);
   drawEnv2D.ctx2D.beginPath();
-  drawEnv2D.ctx2D.arc(center.px, center.py, drawEnv2D.scale*circ, 0, 2*Math.PI, true);
+  drawEnv2D.ctx2D.arc(center.px, center.py, drawEnv2D.scale*circ1, 0, 2*Math.PI, true);
   drawEnv2D.ctx2D.stroke();
-  bemassung(center, new Point(cfgObj.AbstW + circ, cfgObj.AbstN), 't', 0);
+  bemassung(center, new Point(cfgObj.AbstW + circ1, cfgObj.AbstN), 't', 0);
+
+  if(circ2>0.0) {
+    drawEnv2D.ctx2D.beginPath();
+    drawEnv2D.ctx2D.arc(center.px, center.py, drawEnv2D.scale*circ2, 0, 2*Math.PI, true);
+    drawEnv2D.ctx2D.stroke();
+    bemassung(center, new Point(cfgObj.AbstW - circ2, cfgObj.AbstN), 't', 0);
+
+
+  }
+
+
 }
 
 function drawBezier(vertexArray, col="black", lineWidth=3, dash=[]){
@@ -1001,7 +1083,8 @@ function berechneTabellenDaten() {
     document.getElementById("InnenflaecheEG").innerText
       = wflEG.toFixed(2).toString() + "m²";
     let wflOG = berechneOG();   // wird noch durch die Gauben korrigiert
-
+    document.getElementById("InnenflaecheOG").innerText
+      = wflOG.toFixed(2).toString() + "m²";
     // Gaube-Ost
     if(cfgHaus.GaubeOstBreite>0.1) {
       // Tiefe der Gaube berechnen: Da wo die Dachhöhe die OG-Raumhöhe schneidet
@@ -1022,17 +1105,6 @@ function berechneTabellenDaten() {
       const x = berechneSchittAbstand(2.3);
       wflOG += x * cfgHaus.GaubeWestBreite;
     }
-
-
-    // Wohnflaechen berichten
-    const comHausInnen = comPolygon(polyHausInnenEG);
-    drawEnv2D.ctx2D.fillStyle = cfgHaus.colEG;
-    let str = "EG: " + wflEG.toFixed(1).toString() + "m²";
-    drawEnv2D.ctx2D.fillText(str, comHausInnen.px, comHausInnen.py);
-    str = "OG: " + wflOG.toFixed(1).toString() + "m²";
-    drawEnv2D.ctx2D.fillText(str, comHausInnen.px, comHausInnen.py+8);
-    document.getElementById("InnenflaecheOG").innerText
-      = wflOG.toFixed(2).toString() + "m²";
 
     // Anbau Innen
     const polyAnbauInnen = cfgHaus.getPolygonAnbauInnen();
@@ -1064,11 +1136,12 @@ function berechneTabellenDaten() {
 
 // Grundstueck
 function zeichne2DGrundstueck() {
+  console.log('Hier ist zeichne2DGrundstueck');
   // Winkel-Berechnung
-  const WinkelBaugrenzeNord = 90 + berechneWinkelGrad(cfgGrundstueck.Baufenster.Baugrenze, [new Point(0,0), new Point(0,1)]);
-  console.log('WinkelBaugrenze Nord', WinkelBaugrenzeNord);
-  const WinkelBaugrenzeSued = 360 - (90 + WinkelBaugrenzeNord + 90.71);   // 90.71 stammt vom Vermesser
-  console.log('WinkelBaugrenze Süd=', WinkelBaugrenzeSued);
+  // const WinkelBaugrenzeNord = 90 + berechneWinkelGrad(cfgGrundstueck.Baufenster.Baugrenze, [new Point(0,0), new Point(0,1)]);
+  // console.log('WinkelBaugrenze Nord', WinkelBaugrenzeNord);
+  // const WinkelBaugrenzeSued = 360 - (90 + WinkelBaugrenzeNord + 90.71);   // 90.71 stammt vom Vermesser
+  // console.log('WinkelBaugrenze Süd=', WinkelBaugrenzeSued);
 
   const polyGrdst = cfgGrundstueck.Polygon;
   drawPolygon(polyGrdst, "black", 1);
@@ -1080,8 +1153,8 @@ function zeichne2DGrundstueck() {
   }
 
   if (cfgGrundstueck.zeigeBaeume) {
-    drawTree(cfgGrundstueck.Kastanie, 4.25);
-    drawTree(cfgGrundstueck.Eiche, 4.25);
+    drawTree(cfgGrundstueck.Kastanie, 3.0, 4.25);
+    drawTree(cfgGrundstueck.Eiche, 8);
   }
 
   // Alter Weg
@@ -1237,11 +1310,25 @@ function zeichne2DHaus() {
     if(cfgGrundstueck.zeigeBaeume) {
       const kastanieSued = new Point(xcoordFromW(cfgGrundstueck.Kastanie.AbstW),
                                      ycoordFromN(cfgGrundstueck.Kastanie.AbstN + cfgGrundstueck.Kastanie.Radius));
-      const tmpPoint = new Point(kastanieSued.x, polyAussen[0].y);
-      // bemassung(tmpPoint, kastanieSued, 'r', 0);
+      if(polyAussen[0].x > kastanieSued.x) {
+        // in diesem Fall ist die Anbauecke rechts der Kastanien: Bemassung zur Ecke
+        bemassung(polyAussen[0], kastanieSued, 'r', 0);
+      } else {
+        let tmpPoint;
+        if(Math.abs(cfgHaus.OffsetNS) > 0.0001) {
+          tmpPoint = berechneSchnittpunkt(polyAussen[0], polyAussen[2],
+                                          kastanieSued, copyPoint(kastanieSued, 0, cfgGrundstueck.NordSuedLaengeWestseite));
+        } else {
+          tmpPoint = berechneSchnittpunkt(polyAussen[0], polyAussen[4],
+                                          kastanieSued, copyPoint(kastanieSued, 0, cfgGrundstueck.NordSuedLaengeWestseite));
+        }
+        bemassung(tmpPoint, kastanieSued, 'r', 0);
+      }
       // Abstand zur Hausecke
       // if(Math.abs(cfgHaus.OffsetNS)>0.01) {
-      bemassung(polyAussen[3], kastanieSued, 't', 0);
+      if(cfgHaus.OffsetNS > 0) {
+        bemassung(polyAussen[3], kastanieSued, 't', 0);
+      }
       // }
     }
   }
@@ -1335,7 +1422,7 @@ function zeichne2DHaus() {
 
 
   // Wohnflaechen berichten: In die Skizze einzeichnen
-  if (cfgGrundstueck.zeigeHaus) {
+  if (cfgGrundstueck.zeigeHaus && cfgHaus.zeigeFlaechenWerte) {
     const comHausInnen = comPolygon(polyHausInnenEG);
     drawEnv2D.ctx2D.fillStyle = cfgHaus.colEG;
     let str = cfgHaus.HausTyp;
@@ -1362,10 +1449,12 @@ function zeichne2DHaus() {
   }
 
   const wflAnbau =areaPolygon(polyAnbauInnen);
-  if (cfgGrundstueck.zeigeHaus) {
+  // FIXME: das hier klappt noch nicht
+  if (cfgGrundstueck.zeigeHaus && cfgHaus.zeigeFlaechenWerte) {
     if(cfgHaus.AnbauInnenflaeche) {
-      const comAnbauInnen = comPolygon(polyAnbauInnen);
 
+
+      const comAnbauInnen = comPolygon(polyAnbauInnen);
       drawEnv2D.ctx2D.fillStyle = cfgHaus.colEG;
       let str = wflAnbau.toFixed(1).toString() + "m²";
       drawEnv2D.ctx2D.fillText(str, comAnbauInnen.px, comAnbauInnen.py);
@@ -1455,21 +1544,24 @@ function zeichne2DAltesHaus() {
 function zeichne2DCarport() {
 
   if(cfgGrundstueck.Carport.show) {
-    const [p1, p2, p3, p4] = cfgGrundstueck.Carport.Polygon;
-    // const p1 = new Point(xcoordFromBGO(-12.5), 5);
-    // const p2 = new Point(xcoordFromBGO(-14.05), 14);
-    // const p3 = copyPoint(p2, -3, 0);
-    // const p4 = copyPoint(p1, -3, 0);
-    drawPolygon([p1, p2, p3, p4], "black", 1);
+    const [or, ol, ml, ml2, ul, ur] = cfgGrundstueck.Carport.Polygon;
+
+    drawPolygon([or, ol, ml, ml2, ul, ur], "black", 1);
     // Bemassung nach rechts:
     const polyGrdst = cfgGrundstueck.Polygon;
-    bemassung(p1, berechneSchnittpunkt(p1, copyPoint(p1, 10, 0),
+    bemassung(or, berechneSchnittpunkt(or, copyPoint(or, 10, 0),
                                        polyGrdst[1], polyGrdst[2]), 't', 0);
-    bemassung(p2, berechneSchnittpunkt(p2, copyPoint(p2, 10, 0),
+    bemassung(ur, berechneSchnittpunkt(ur, copyPoint(ur, 10, 0),
                                        polyGrdst[1], polyGrdst[2]), 't', 0);
     // Bemassung nach links zur Baugrenze
-    bemassung(p4, new Point(xcoordFromBGO(0), p4.y), 't', 0);
-    bemassung(p3, new Point(xcoordFromBGO(0), p3.y), 't', 0);
+    bemassung(ol, new Point(xcoordFromBGO(0), ol.y), 't', 0);
+    bemassung(ul, new Point(xcoordFromBGO(0), ul.y), 't', 0);
+    bemassung(ur, or, 'r');
+
+    // const mr = pointInbetween(or, ur, 5/9);
+    // const ml = pointInbetween(ol, ul, 5/9);
+    // bemassung(mr, ml, 't', 0);
+
   }
 
 }
@@ -1749,7 +1841,7 @@ function updateAll() {
   zeichneSeitenansichten();
 }
 
-window.addEventListener("load", updateAll);
+// window.addEventListener("load", updateAll);
 
 const detDatenTabelle = document.getElementById("detDatenTabelle");
 detDatenTabelle.addEventListener("toggle", berechneTabellenDaten);
