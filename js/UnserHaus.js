@@ -38,7 +38,7 @@ function drawEnv2DGrundstueck() {
       this.ctx2D.scale(2.0,2.0);
     }
   };
-};
+}
 
 function drawEnv2DSeitenansichten() {
   return {
@@ -66,11 +66,11 @@ function drawEnv2DSeitenansichten() {
       this.ctx2D.scale(this.ctxScale,this.ctxScale);
     }
   };
-};
+}
 
 function cfgGrundstueckDefault() {
   return {
-    zeigeMasse: false,
+    zeigeMasse: true,
     zeigeHaus: true,
     zeigeGitter: true,
     zeigeBaeume: true,
@@ -142,7 +142,7 @@ function cfgGrundstueckDefault() {
       show: true,
       Breite: 2.6,
       AbstNostseite: 0.3,
-      AbstNwestseite: 1.65,
+      AbstNwestseite: 1.55,
     },
     Carport: {
       show: false,
@@ -189,7 +189,7 @@ function cfgGrundstueckDefault() {
       }
     }
   };
-};
+}
 
 
 
@@ -213,6 +213,7 @@ Haustypen.set("Talis 80D", {
   OffsetOW: 0.0,
   AnbauLaengeOW: 0,
   AnbauInnenflaeche: false,
+  GiebelRichtungNS: true
 });
 Haustypen.set("Talis 80D mit Anbau", {
   HausLaengeOW: 8.00,
@@ -222,6 +223,7 @@ Haustypen.set("Talis 80D mit Anbau", {
   HausAbstS: 0.7,
   AnbauLaengeOW: 5.85,
   AnbauInnenflaeche: true,
+  GiebelRichtungNS: true
 });
 Haustypen.set("Talis 106D", {
   HausLaengeOW: 13.25,
@@ -230,7 +232,8 @@ Haustypen.set("Talis 106D", {
   OffsetOW: 0.0,
   HausAbstS: 2.2,
   AnbauLaengeOW: 0.0,
-  AnbauInnenflaeche: false
+  AnbauInnenflaeche: false,
+  GiebelRichtungNS: false
 });
 
 Haustypen.set("Akost Arne 100", {
@@ -239,11 +242,12 @@ Haustypen.set("Akost Arne 100", {
   OffsetNS: 0.0,
   OffsetOW: 0.0,
   AnbauLaengeOW: 0,
-  AnbauInnenflaeche: false
+  AnbauInnenflaeche: false,
+  GiebelRichtungNS: true
 });
 Haustypen.set("Akost Frode (schmal)", {
-  HausLaengeOW: 13.86 - 0.5,  // 0.5 schmaler würde es passen
-  HausLaengeNS: 8.81,
+  HausLaengeOW: 13.86 - 0.54,  // 0.5 schmaler würde es passen
+  HausLaengeNS: 8.95,
   OffsetNS: 0.0,
   OffsetOW: 0.0,
   AnbauLaengeOW: 0.0,
@@ -251,6 +255,19 @@ Haustypen.set("Akost Frode (schmal)", {
   GaubeOstBreite: 0.0,
   GaubeWestBreite: 0.0,
   AnbauInnenflaeche: false,
+  GiebelRichtungNS: false
+});
+Haustypen.set("Vierck Emden", {
+  HausLaengeOW: 10.62,
+  HausLaengeNS: 8.55,
+  OffsetNS: 0.0,
+  OffsetOW: 0.0,
+  AnbauLaengeOW: 0.0,
+  HausAbstS: 1.75,
+  GaubeOstBreite: 0.0,
+  GaubeWestBreite: 0.0,
+  AnbauInnenflaeche: false,
+  GiebelRichtungNS: false
 });
 Haustypen.set("Noah Vermont", {
   HausLaengeOW: 8.58,
@@ -259,7 +276,8 @@ Haustypen.set("Noah Vermont", {
   OffsetOW: 0.0,
   AnbauLaengeOW: 0,
   HausAbstS: 0.8,
-  AnbauInnenflaeche: false
+  AnbauInnenflaeche: false,
+  GiebelRichtungNS: true
 });
 Haustypen.set("Dammann Imke", {
   HausLaengeOW: 10.4,
@@ -268,7 +286,8 @@ Haustypen.set("Dammann Imke", {
   OffsetNS: 0.0,
   OffsetOW: 0.0,
   AnbauLaengeOW: 0,
-  AnbauInnenflaeche: false
+  AnbauInnenflaeche: false,
+  GiebelRichtungNS: false
 });
 
 Haustypen.set("Dammann Isa", {
@@ -277,9 +296,10 @@ Haustypen.set("Dammann Isa", {
   HausAbstS: 1.5,
   OffsetNS: 0.0,
   OffsetOW: 0.0,
-  AnbauLaengeOW: 5,
+  AnbauLaengeOW: 5.73,
   AbstAnbauEcke: -0.37,
-  AnbauInnenflaeche: true
+  AnbauInnenflaeche: true,
+  GiebelRichtungNS: true
 });
 
 
@@ -298,12 +318,23 @@ function cfgHausDefault() {
     HausDrehWinkel: -1.91,  // in Grad
 
     HausLaengeOW: 8.00,
-    get HausLaengeInnenOW() {
-      return this.HausLaengeOW - 2 * this.DickeAussenwand;
+    HausLaengeNS: 10.25,
+    // get HausLaengeInnenOW() {
+    //   return this.HausLaengeOW - 2 * this.DickeAussenwand;
+    // },
+    // get HausLaengeInnenNS() {
+    //   return this.HausLaengeNS - 2 * this.DickeAussenwand;
+    // },
+    get HausLaengeInnenGiebelseite() {
+      const len = this.GiebelRichtungNS ? this.HausLaengeOW : this.HausLaengeNS;
+      return len - 2 * this.DickeAussenwand;
+    },
+    get HausLaengeAussenGiebelseite() {
+      const len = this.GiebelRichtungNS ? this.HausLaengeOW : this.HausLaengeNS;
+      return len;
     },
     HausAbstO: 0.0,
     HausAbstS: 0.75,
-    HausLaengeNS: 10.25,
     OffsetNS: 1.0,
     OffsetOW: 1.0,
     AnbauLaengeOW: 5.8,
@@ -353,11 +384,10 @@ function cfgHausDefault() {
       const pkt5 = copyPoint(polyAussen[7], daw, -daw);
       const pkt6 = copyPoint(polyAnbauInnen[2], diw, 0);
       const pkt7 = copyPoint(polyAnbauInnen[1], diw, 0);
-      if(pkt5.x>=pkt6.x) {
-      } else {
+      if(pkt5.x < pkt6.x) {
         pkt5.y += diw;
         pkt6.y += diw;
-      }
+      } // else { ??? }
 
 
       const polyHausInnen = [
@@ -381,7 +411,7 @@ function cfgHausDefault() {
     },
     getPolygonOGInnen(rot=true) {
       const daw = this.DickeAussenwand;
-      const diw = this.DickeInnenwand;
+      // const diw = this.DickeInnenwand;
       const polyAussen = this.getPolygonAussen(false);
       const polyHausOGInnen = [
         copyPoint(polyAussen[1], daw, daw),   // 0
@@ -409,7 +439,7 @@ function cfgHausDefault() {
       const ul = copyPoint(polyAussen[8], daw, -daw);   // unten links
       const polyAnbauInnen = [ol, or, ur, ul];
       if(rot) {
-        return polyAnbauInnen.map(p=>rotatePointPivot(p, this.HausDrehWinkel, polyAussen[4]));;
+        return polyAnbauInnen.map(p=>rotatePointPivot(p, this.HausDrehWinkel, polyAussen[4]));
       } else {
         return polyAnbauInnen;
       }
@@ -432,6 +462,7 @@ function cfgHausDefault() {
     },
 
     // wird fuer die Berechnung der Wfl im OG gebrauch
+    GiebelRichtungNS: false,   // andernfalls zeigt der Giebel in Ost-Richtung
     DickeDach: 0.35,
     DickeEGdecke: 0.35,
     DickeOGdecke: 0.35,
@@ -443,7 +474,7 @@ function cfgHausDefault() {
     GaubeOstBreite: 3.3,   // etwa die Verandabreite
     GaubeWestBreite: 3.3   // etwa die Verandabreite
   };
-};
+}
 
 let cfgGrundstueck, cfgHaus;
 function initCfg() {
@@ -486,7 +517,7 @@ guiHaus.add(cfgHaus, "HausTyp", Array.from(Haustypen.keys())).name("Haus Typ").o
 });
 
 guiHaus.add(cfgHaus, "HausAbstS", 0, 4, 0.01).name("Haus Abstand Süd").onChange(v => guiSetter(cfgHaus, "HausAbstS", v));
-guiHaus.add(cfgHaus, "HausAbstO", -1, 5, 0.05).name("Haus Abstand Ost").onChange(v => guiSetter(cfgHaus, "HausAbstO", v));
+guiHaus.add(cfgHaus, "HausAbstO", -3, 5, 0.05).name("Haus Abstand Ost").onChange(v => guiSetter(cfgHaus, "HausAbstO", v));
 guiHaus.add(cfgHaus, "HausLaengeNS", 5, 12, 0.01).name("Haus Länge Nord Süd").onChange(v => guiSetter(cfgHaus, "HausLaengeNS", v));
 guiHaus.add(cfgHaus, "HausLaengeOW", 5, 14, 0.01).name("Haus Länge Ost West").onChange(v => guiSetter(cfgHaus, "HausLaengeOW", v));
 guiHaus.add(cfgHaus, "HausDrehWinkel", -4, 1, 0.01).name("Haus Drehwinkel").onChange(v => guiSetter(cfgHaus, "HausDrehWinkel", v));
@@ -558,9 +589,9 @@ function ycoordFromS(y, x=-1)  {
   return ret;
 }
 
-const xcoordFromBFW = x => cfgGrundstueck.Baufenster.Polygon[0].x + x;
+// const xcoordFromBFW = x => cfgGrundstueck.Baufenster.Polygon[0].x + x;
 const xcoordFromBFO = x => cfgGrundstueck.Baufenster.Polygon[3].x - x;
-const ycoordFromBFN = y => cfgGrundstueck.Baufenster.Polygon[2].y + y;
+// const ycoordFromBFN = y => cfgGrundstueck.Baufenster.Polygon[2].y + y;
 const ycoordFromBFS = y => cfgGrundstueck.Baufenster.Polygon[4].y - y;
 
 function zeichne2DAchsen() {
@@ -658,22 +689,23 @@ function comPolygon(vertexArray) {
 }
 
 
-function berechneWinkelGrad(v1, v2) {
-  // v1, v2: Arrays der Länge 2 mit Point-Objekten
-  const x1 = v1[0].x - v1[1].x;
-  const y1 = v1[0].y - v1[1].y;
+// Nachpruefen der Winkel vom Vermesser: passt
+// function berechneWinkelGrad(v1, v2) {
+//   // v1, v2: Arrays der Länge 2 mit Point-Objekten
+//   const x1 = v1[0].x - v1[1].x;
+//   const y1 = v1[0].y - v1[1].y;
 
-  const x2 = v2[0].x - v2[1].x;
-  const y2 = v2[0].y - v2[1].y;
+//   const x2 = v2[0].x - v2[1].x;
+//   const y2 = v2[0].y - v2[1].y;
 
 
-  const len1 = Math.sqrt(x1*x1+y1*y1);
-  const len2 = Math.sqrt(x2*x2+y2*y2);
-  const dotProd = x1*x2 + y1*y2;
+//   const len1 = Math.sqrt(x1*x1+y1*y1);
+//   const len2 = Math.sqrt(x2*x2+y2*y2);
+//   const dotProd = x1*x2 + y1*y2;
 
-  const rad = Math.acos(dotProd/(len1*len2));
-  return rad / Math.PI * 180;
-}
+//   const rad = Math.acos(dotProd/(len1*len2));
+//   return rad / Math.PI * 180;
+// }
 // const v1 = [new Point(0,0), new Point(1,0)];
 // const v2 = [new Point(0,0), new Point(1,1)];
 // console.log('berechneWinkelGrad(v1, v2)=', berechneWinkelGrad(v1,v2));
@@ -681,7 +713,7 @@ function berechneWinkelGrad(v1, v2) {
 
 
 // https://stackoverflow.com/questions/808826/draw-arrow-on-canvas-tag (ganz unten)
-function drawArrow(x0, y0, x1, y1, width=0.5) {
+function drawArrow(x0, y0, x1, y1, width=0.5, double=true) {
 
   // x0, y0, x1, y1, width=0.5) {
   // const width = 0.8;
@@ -715,9 +747,11 @@ function drawArrow(x0, y0, x1, y1, width=0.5) {
   }
   drawHead(x1, y1);
   /* Adjust the point */
-  x0 -= width * Math.cos(angle);
-  y0 -= width * Math.sin(angle);
-  drawHead(x0, y0, -1);
+  if(double) {
+    x0 -= width * Math.cos(angle);
+    y0 -= width * Math.sin(angle);
+    drawHead(x0, y0, -1);
+  }
 }
 
 function distBetweenPoints(p1, p2) {
@@ -897,7 +931,8 @@ function drawPolygon(vertexArray, col="black", lineWidth=3, dash=[], close=true)
 // Fuers Obergeschoss: Berechne Abstand Innenwand zum Punkt mit Hoehe h
 function berechneSchittAbstand(h) {
 
-  const B = cfgHaus.HausLaengeInnenOW; // OW - 2 * cfgHaus.DickeAussenwand;
+  const B = cfgHaus.HausLaengeInnenGiebelseite;
+  // const B = cfgHaus.HausLaengeInnenOW; // OW - 2 * cfgHaus.DickeAussenwand;
   const L = B / (2 * Math.cos(Math.PI/180*cfgHaus.Dachneigung));
   const H = L * Math.sin(Math.PI/180*cfgHaus.Dachneigung);
   const y = h - cfgHaus.Kniestock;
@@ -906,9 +941,9 @@ function berechneSchittAbstand(h) {
 }
 
 function berechneOG() {
-  const B = cfgHaus.HausLaengeInnenOW; //  - 2 * cfgHaus.DickeAussenwand;
-  const L = B / (2 * Math.cos(Math.PI/180*cfgHaus.Dachneigung));
-  const H = L * Math.sin(Math.PI/180*cfgHaus.Dachneigung);
+  const B = cfgHaus.HausLaengeInnenGiebelseite; //  - 2 * cfgHaus.DickeAussenwand;
+  // const L = B / (2 * Math.cos(Math.PI/180*cfgHaus.Dachneigung));
+  // const H = L * Math.sin(Math.PI/180*cfgHaus.Dachneigung);
   const x = berechneSchittAbstand(2.3); // Math.max(0, y * B / (2 * H));
   const hausAussenpoly = cfgHaus.getPolygonAussen();
   const laengeHausNS = distBetweenPoints(hausAussenpoly[4], hausAussenpoly[5]) - 2 * cfgHaus.DickeAussenwand;
@@ -919,7 +954,8 @@ function berechneOG() {
 }
 
 function berechneGiebelhoehe() {
-  const B = cfgHaus.HausLaengeOW - 2 * cfgHaus.DickeAussenwand;
+  const hausLaenge = cfgHaus.GiebelRichtungNS ? cfgHaus.HausLaengeOW : cfgHaus.HausLaengeNS;
+  const B = hausLaenge - 2 * cfgHaus.DickeAussenwand;
   const H = B / 2 * Math.tan(Math.PI / 180 * cfgHaus.Dachneigung);
   const G = cfgHaus.DickeDach / Math.cos(Math.PI / 180 * cfgHaus.Dachneigung);
   return cfgHaus.RaumhoeheEG + cfgHaus.DickeEGdecke + cfgHaus.Kniestock + H + G;
@@ -1061,8 +1097,16 @@ function berechneTabellenDaten() {
     const flDachterasse = areaPolygon([polyAussen[0], polyAussen[1], polyAussen[7], polyAussen[8]]);
     document.getElementById("FlaecheDachterasse").innerText
       = flDachterasse.toFixed(2).toString() + "m²";
-    const p = middlePoint(polyAussen[5], polyAussen[6])
-    const maxGiebelHoehe = distBetweenPoints(p, new Point(p.x, ycoordFromS(0, p.x))) / 0.4;
+
+    // Berechnung der maximalen Giebelhöhe:
+    let mp, maxGiebelHoehe;
+    if(cfgHaus.GiebelRichtungNS) {
+      mp = middlePoint(polyAussen[5], polyAussen[6]);
+      maxGiebelHoehe = distBetweenPoints(mp, new Point(mp.x, ycoordFromS(0, mp.x))) / 0.4;
+    } else {
+      mp = middlePoint(polyAussen[0], polyAussen[8]);
+      maxGiebelHoehe = distBetweenPoints(mp, new Point(xcoordFromW(0), mp.y)) / 0.4;
+    }
     document.getElementById("MaxGiebelHoehe").innerText
       = maxGiebelHoehe.toFixed(2).toString() + "m";
     const verandaBreite = 1/3 * distBetweenPoints(polyAussen[4], polyAussen[5]);
@@ -1089,8 +1133,8 @@ function berechneTabellenDaten() {
     if(cfgHaus.GaubeOstBreite>0.1) {
       // Tiefe der Gaube berechnen: Da wo die Dachhöhe die OG-Raumhöhe schneidet
 
-      const mitteAussen = middlePoint(polyAussen[4], polyAussen[5]);
-      const tiefe = berechneSchittAbstand(2.5) + cfgHaus.DickeAussenwand;
+      // const mitteAussen = middlePoint(polyAussen[4], polyAussen[5]);
+      // const tiefe = berechneSchittAbstand(2.5) + cfgHaus.DickeAussenwand;
       // Wohnflaeche korrigieren:
       const x = berechneSchittAbstand(2.3);
       wflOG += x * cfgHaus.GaubeOstBreite;
@@ -1099,8 +1143,8 @@ function berechneTabellenDaten() {
     // Gaube West
     if(cfgHaus.GaubeWestBreite>0.1) {
 
-      const mitteAussen = middlePoint(polyAussen[1], polyAussen[7]);
-      const tiefe = berechneSchittAbstand(2.5) + cfgHaus.DickeAussenwand;
+      // const mitteAussen = middlePoint(polyAussen[1], polyAussen[7]);
+      // const tiefe = berechneSchittAbstand(2.5) + cfgHaus.DickeAussenwand;
       // Wohnflaeche korrigieren:
       const x = berechneSchittAbstand(2.3);
       wflOG += x * cfgHaus.GaubeWestBreite;
@@ -1142,6 +1186,17 @@ function zeichne2DGrundstueck() {
   // console.log('WinkelBaugrenze Nord', WinkelBaugrenzeNord);
   // const WinkelBaugrenzeSued = 360 - (90 + WinkelBaugrenzeNord + 90.71);   // 90.71 stammt vom Vermesser
   // console.log('WinkelBaugrenze Süd=', WinkelBaugrenzeSued);
+
+
+  // Pfeil nach Norden
+  const nordWinkel = -5;
+  const nordpfeilStart = new Point(cfgGrundstueck.OstWestLaengeSuedseite * 3/4,
+                                   cfgGrundstueck.NordSuedLaengeWestseite / 2);
+  const nordpfeilEnde = rotatePointPivot(copyPoint(nordpfeilStart, 0, -5),
+                                         nordWinkel, nordpfeilStart);
+  console.log("Hallo");
+  drawArrow(nordpfeilStart.px, nordpfeilStart.py, nordpfeilEnde.px, nordpfeilEnde.py, 2.0, false);
+
 
   const polyGrdst = cfgGrundstueck.Polygon;
   drawPolygon(polyGrdst, "black", 1);
@@ -1252,7 +1307,7 @@ function zeichne2DHaus() {
     //   cfgHaus.colEG, 0.2);
   }
 
-  const mp67 = middlePoint(polyAussen[6], polyAussen[7]);
+  // const mp67 = middlePoint(polyAussen[6], polyAussen[7]);
   const mp78 = middlePoint(polyAussen[7], polyAussen[8]);
 
   if(cfgGrundstueck.zeigeHaus && cfgHaus.zeigeAussenMasse) {
@@ -1350,8 +1405,8 @@ function zeichne2DHaus() {
   }
 
   // Haus Innen
-  const daw = cfgHaus.DickeAussenwand;
-  const diw = cfgHaus.DickeInnenwand;
+  // const daw = cfgHaus.DickeAussenwand;
+  // const diw = cfgHaus.DickeInnenwand;
 
   const polyHausInnenEG = cfgHaus.getPolygonEGInnen();
   const polyHausInnenOG = cfgHaus.getPolygonOGInnen();
@@ -1498,9 +1553,9 @@ function zeichne2DAltesHaus() {
     }
     const altesHausNeuerAnbau = false;
 
-    const polyOhneAnbau = cfgGrundstueck.AltesHaus.PolygonOhneAnbau;
-    const flOhneAnbau = areaPolygon(polyOhneAnbau);
-    const comOhneAnbau = comPolygon(polyOhneAnbau);
+    // const polyOhneAnbau = cfgGrundstueck.AltesHaus.PolygonOhneAnbau;
+    // const flOhneAnbau = areaPolygon(polyOhneAnbau);
+    // const comOhneAnbau = comPolygon(polyOhneAnbau);
     drawEnv2D.ctx2D.fillStyle = "gray";
     // let str = "Ohne Anbau: " + flOhneAnbau.toFixed(1).toString() + "m²";
     // drawEnv2D.ctx2D.fillText(str, comOhneAnbau.px + 50, comOhneAnbau.py-10);
@@ -1517,7 +1572,7 @@ function zeichne2DAltesHaus() {
       const flNeuerAnbau = areaPolygon(polyNeuerAnbau);
       const comNeuerAnbau = comPolygon(polyNeuerAnbau);
       drawEnv2D.ctx2D.fillStyle = cfgHaus.colEG;
-      str = "Neuer Anbau: " + flNeuerAnbau.toFixed(1).toString() + "m²";
+      const str = "Neuer Anbau: " + flNeuerAnbau.toFixed(1).toString() + "m²";
       drawEnv2D.ctx2D.fillText(str, comNeuerAnbau.px + 50, comNeuerAnbau.py-40);
     }
     drawEnv2D.setStdTransformState();
@@ -1591,11 +1646,13 @@ function zeichneGrundstuecksPlan() {
 
 function zeichneSuedGiebel() {
 
+  const hausLaenge = cfgHaus.HausLaengeAussenGiebelseite;
+  const innenLaenge = cfgHaus.HausLaengeInnenGiebelseite;
   // const offsetX = Math.ceil(cfgHaus.HausLaengeOW/2) +1;
   const yMirror =  p=>new Point(p.x, -p.y);
   // const poly = cfgHaus.PolygonSuedGiebel.map(yMirror);
   const polyDach = polyDachQuerschnitt(cfgHaus.DickeDach, cfgHaus.Dachneigung,
-                                       cfgHaus.HausLaengeOW/2 + cfgHaus.Dachueberstand)
+                                       hausLaenge/2 + cfgHaus.Dachueberstand)
         .map(p=>new Point(p.x, -p.y));
   const l = polyDach[0].x - polyDach[5].x - cfgHaus.Dachueberstand;
   const polyRechteSeite = rechterWandQuerschnitt(cfgHaus.DickeAussenwand,
@@ -1604,7 +1661,7 @@ function zeichneSuedGiebel() {
                                                  l,
                                                  cfgHaus.RaumhoeheEG,
                                                  cfgHaus.DickeEGdecke)
-        .map(yMirror).map(p=>copyPoint(p, cfgHaus.HausLaengeInnenOW/2,0));
+        .map(yMirror).map(p=>copyPoint(p, innenLaenge/2,0));
   const polyLinkeSeite = polyRechteSeite.map(p=>new Point(-p.x, p.y));
 
   drawPolygon(polyRechteSeite, "black", 1.5);
@@ -1630,9 +1687,9 @@ function zeichneSuedGiebel() {
 
   drawPolygon(polyDach, "black", 1.5);
   // Decke OG
-  const tmpPoint1 = new Point(-2*cfgHaus.HausLaengeOW,
+  const tmpPoint1 = new Point(-2*hausLaenge,
                               -(cfgHaus.RaumhoeheEG + cfgHaus.DickeEGdecke + cfgHaus.RaumhoeheOG));
-  const tmpPoint2 = copyPoint(tmpPoint1, 4*cfgHaus.HausLaengeOW, 0);
+  const tmpPoint2 = copyPoint(tmpPoint1, 4*hausLaenge, 0);
   let sp1 = berechneSchnittpunkt(tmpPoint1, tmpPoint2, polyDach[4], polyDach[3]);
   let sp2 = berechneSchnittpunkt(tmpPoint1, tmpPoint2, polyDach[4], polyDach[5]);
   drawPolygon([sp1, sp2], "black", 0.2);
@@ -1650,8 +1707,8 @@ function zeichneSuedGiebel() {
   bemassung(polyDach[4],
             new Point(0, -(cfgHaus.RaumhoeheEG + cfgHaus.DickeEGdecke + cfgHaus.RaumhoeheOG + cfgHaus.DickeOGdecke)), 'r', 0);
   // Bemassung von ganz oben nach unten
-  bemassung(new Point(cfgHaus.HausLaengeOW/2+1, 0),
-            new Point(cfgHaus.HausLaengeOW/2+1, polyDach[1].y),
+  bemassung(new Point(hausLaenge/2+1, 0),
+            new Point(hausLaenge/2+1, polyDach[1].y),
             'r', 0.1);
 
 }
@@ -1782,9 +1839,9 @@ function zeichne3DGrundstueck() {
   Grundstueck.add(Kastantie);
 
   const ahGeo = new THREE.ExtrudeGeometry(polygon2Shape(cfgGrundstueck.AltesHaus.Polygon), {
-	  steps: 2,
-	  depth: -3,
-	  bevelEnabled: false});
+    steps: 2,
+    depth: -3,
+    bevelEnabled: false});
   const ahMat = new THREE.MeshBasicMaterial({color:'gray', side:THREE.DoubleSide});
 
   const AltesHaus = new THREE.Mesh(ahGeo, ahMat);
@@ -1798,9 +1855,9 @@ function zeichne3DGrundstueck() {
 
 
   const cpGeo = new THREE.ExtrudeGeometry(polygon2Shape(cfgGrundstueck.Carport.Polygon), {
-	  steps: 2,
-	  depth: -3,
-	  bevelEnabled: false});
+    steps: 2,
+    depth: -3,
+    bevelEnabled: false});
   const cpMat = new THREE.MeshBasicMaterial({color:'gray',side:THREE.DoubleSide});
 
   const Carport = new THREE.Mesh(cpGeo, cpMat);
