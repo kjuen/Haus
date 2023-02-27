@@ -17,15 +17,21 @@
          th,
          td,
          caption {
-	         border: thin solid #a0a0a0;
+	         border: thick solid #a0a0a0;
          }
+
 
          table {
 	         border-collapse: collapse;
 	         border-spacing: 0;
 	         border-width: thin 0 0 thin;
 	         margin: 0 0 1em;
+           margin-block: 20px;
+           margin-right: 20px;
+           display: inline-block;   /* stellt zwei Tabellen nebeneinander */
 	         table-layout: auto;
+           /*            align-items: top; */
+           /*            padding: 5px; */
 	         /* Prevents HTML tables from becoming too wide */
 
 	         max-width: 100%;
@@ -93,7 +99,6 @@
             <summary>
                 Eckdaten Wittenbergener Weg 60
             </summary>
-
             <table class="Eckdaten">
                 <!--         https://wiki.selfhtml.org/wiki/HTML/Tabellen/Aufbau_einer_Tabelle -->
                 <!-- <caption>Eckdaten WW 60</caption> -->
@@ -102,20 +107,32 @@
                     <tr> <td>Fläche Alter Weg</td> <td id="FlaecheWegAlt"></td></tr>
                     <tr> <td>Fläche Baufenster</td> <td id="FlaecheBaufenster"></td></tr>
                     <tr> <td>Grundfläche (Haus + Anbau)</td> <td id="Grundflaeche"></td></tr>
-                    <tr> <td>66% der Grundfläche</td> <td id="Grundflaeche66"></td></tr>
+                    <!-- <tr> <td>66% der Grundfläche</td> <td id="Grundflaeche66"></td></tr> -->
                     <tr> <td>Fläche Dachterasse</td> <td id="FlaecheDachterasse"></td></tr>
                     <tr> <td>Fläche Hintergarten</td> <td id="FlaecheHintergarten"></td></tr>
                     <tr> <td>Giebelhöhe</td> <td id="GiebelHoehe"></td></tr>
                     <tr> <td>Max. Giebelhöhe</td> <td id="MaxGiebelHoehe"></td></tr>
+                </tbody>
+            </table>
+
+            <table class="Eckdaten">
+                <!--         https://wiki.selfhtml.org/wiki/HTML/Tabellen/Aufbau_einer_Tabelle -->
+                <!-- <caption>Eckdaten WW 60</caption> -->
+                <tbody>
                     <tr> <td>Max. Breite Veranda</td> <td id="VerandaBreite"></td></tr>
                     <tr> <td>Innenfläche Anbau</td> <td id="InnenflaecheAnbau"></td></tr>
                     <tr> <td>Innenfläche EG</td> <td id="InnenflaecheEG"></td></tr>
-                    <tr> <td>Innenfläche OG</td> <td id="InnenflaecheOG"></td></tr>
-                    <tr> <td>Gesamte Innenfläche</td> <td id="InnenflaecheGesamt"></td></tr>
+                    <tr> <td>Fläche OG > 2.30m</td> <td id="InnenflaecheOG"></td></tr>
+                    <tr> <td>OG > 2.30m / Innenfläche EG + Anbau</td> <td id="InnenflaecheOGzuEG"></td></tr>
+                    <tr> <td>Fläche OG > 1.50m</td> <td id="WohnflaecheOG"></td></tr>
+                    <tr> <td>Wohnfläche (>1.50m) Gesamt</td> <td id="WohnflaecheGesamt"></td></tr>
+                    <!-- <tr> <td>Gesamte Innenfläche</td> <td id="InnenflaecheGesamt"></td></tr> -->
                     <tr> <td>Budget Haus (ohne Keller)</td> <td id="BudgetHaus"></td></tr>
 
                 </tbody>
             </table>
+
+
         </details>
 
         <details id="detPlanGrundstueck"   open="true">
@@ -137,8 +154,8 @@
             </summary>
 
             <canvas id="canvasSeitenansichten"
-                width="1100"
-                height="550">
+                    width="1100"
+                    height="550">
             </canvas>
         </details>
 

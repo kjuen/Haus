@@ -1,11 +1,13 @@
 /* global lil */
 
+// Gute vanilla JS-Elemente: https://vanillalist.top
+
 // FIXME:
-// - Die Bemassung von KastinieSued nach Sueden passt nicht genau
+// - Bug: Bei Wandstaerke 0 sind die Giebelhöhen im Querschnitt und in der Tabelle ungleich
+//        das ist, glaube ich, kein ernsthaftes Problem, sondern kommt durch diese komplizierte Situation, an der Oberkante der Wand
 
 // TODO:
 // - Anteil Fläche OG über 2.20 (oder 2.30) ausrechnen (darf nicht mehr als Fläche EG sein, aber ist das bebaute Fläche oder Wohnfläche?)
-// - Hausgrößen vorkonfigurieren
 // - GUI fuer Seitenansicht verbessern
 // - 3D-Haus zeichnen
 console.log('Hier wird unser Haus gebaut');
@@ -205,7 +207,19 @@ function setHaustyp(cfgObj, haustypObj, parentController) {
 
 
 const Haustypen = new Map();
-Haustypen.set("Kein Typ", {});
+// Haustypen.set("Kein Typ", {});
+Haustypen.set("Eigener Grundriss", {
+  HausLaengeOW: 7.8,
+  HausLaengeNS: 9.6,
+  HausAbstS: 0.78,
+  HausAbstO: 0.3,
+  OffsetNS: 0.0,
+  OffsetOW: 0.0,
+  AnbauLaengeOW: 5.75,
+  AbstAnbauEcke: -1.5,
+  AnbauInnenflaeche: true,
+  GiebelRichtungNS: true
+});
 Haustypen.set("Talis 80D", {
   HausLaengeOW: 8.00,
   HausLaengeNS: 10.00,
@@ -310,7 +324,7 @@ function cfgHausDefault() {
     zeigeVeranda: false,
     zeigeAussenMasse: true,
     zeigeInnenMasse: false,
-    zeigeFlaechenWerte: true,
+    zeigeFlaechenWerte: false,
     zeigeOG: false,
     colEG: "Green",
     colOG: "LightGreen",
@@ -339,10 +353,10 @@ function cfgHausDefault() {
     OffsetOW: 1.0,
     AnbauLaengeOW: 5.8,
     AnbauLaengeNS: 5.50,
-    DickeAussenwand: 0.37,
+    DickeAussenwand: 0.37, // .37,
     DickeInnenwand: 0.2,
     AbstAnbauEcke: -2.5,  // 2.6
-    AnbauInnenflaeche: true,
+    AnbauInnenflaeche: false,
     // Punkt 1 ist doch überflüssig!
     //          3-------4
     //          |       |
@@ -480,6 +494,11 @@ let cfgGrundstueck, cfgHaus;
 function initCfg() {
   cfgGrundstueck = cfgGrundstueckDefault();
   cfgHaus = cfgHausDefault();
+  const hausTyp = Haustypen.get("Eigener Grundriss");
+  for(let f in hausTyp) {
+    cfgHaus[f] = hausTyp[f];
+  }
+  cfgHaus.HausTyp = "Eigener Grundriss";
 }
 initCfg();
 
@@ -940,11 +959,12 @@ function berechneSchittAbstand(h) {
   return x;
 }
 
-function berechneOG() {
+// Brechnet die OG-Flaeche ueber einer gewissen Hoehe
+function berechneOG(hoehe) {
   const B = cfgHaus.HausLaengeInnenGiebelseite; //  - 2 * cfgHaus.DickeAussenwand;
   // const L = B / (2 * Math.cos(Math.PI/180*cfgHaus.Dachneigung));
   // const H = L * Math.sin(Math.PI/180*cfgHaus.Dachneigung);
-  const x = berechneSchittAbstand(2.3); // Math.max(0, y * B / (2 * H));
+  const x = berechneSchittAbstand(hoehe); // Math.max(0, y * B / (2 * H));
   const hausAussenpoly = cfgHaus.getPolygonAussen();
   const laengeHausNS = distBetweenPoints(hausAussenpoly[4], hausAussenpoly[5]) - 2 * cfgHaus.DickeAussenwand;
   const wflOG = laengeHausNS * (B - 2 * x);
@@ -958,6 +978,7 @@ function berechneGiebelhoehe() {
   const B = hausLaenge - 2 * cfgHaus.DickeAussenwand;
   const H = B / 2 * Math.tan(Math.PI / 180 * cfgHaus.Dachneigung);
   const G = cfgHaus.DickeDach / Math.cos(Math.PI / 180 * cfgHaus.Dachneigung);
+
   return cfgHaus.RaumhoeheEG + cfgHaus.DickeEGdecke + cfgHaus.Kniestock + H + G;
 }
 
@@ -1092,8 +1113,8 @@ function berechneTabellenDaten() {
     }
     document.getElementById("Grundflaeche").innerText
       = flAussen.toFixed(2).toString() + "m²";
-    document.getElementById("Grundflaeche66").innerText
-      = (flAussen/100 * 66).toFixed(2).toString() + "m²";
+    // document.getElementById("Grundflaeche66").innerText
+    //   = (flAussen/100 * 66).toFixed(2).toString() + "m²";
     const flDachterasse = areaPolygon([polyAussen[0], polyAussen[1], polyAussen[7], polyAussen[8]]);
     document.getElementById("FlaecheDachterasse").innerText
       = flDachterasse.toFixed(2).toString() + "m²";
@@ -1126,29 +1147,26 @@ function berechneTabellenDaten() {
     const wflEG = areaPolygon(polyHausInnenEG);
     document.getElementById("InnenflaecheEG").innerText
       = wflEG.toFixed(2).toString() + "m²";
-    let wflOG = berechneOG();   // wird noch durch die Gauben korrigiert
-    document.getElementById("InnenflaecheOG").innerText
-      = wflOG.toFixed(2).toString() + "m²";
+    let wflOG23 = berechneOG(2.3);   // wird noch durch die Gauben korrigiert
+
+    let wflOG15 = berechneOG(1.5);   // wird noch durch die Gauben korrigiert
+    const x15 = berechneSchittAbstand(1.5);
+    const x23 = berechneSchittAbstand(2.3);
     // Gaube-Ost
     if(cfgHaus.GaubeOstBreite>0.1) {
-      // Tiefe der Gaube berechnen: Da wo die Dachhöhe die OG-Raumhöhe schneidet
-
-      // const mitteAussen = middlePoint(polyAussen[4], polyAussen[5]);
-      // const tiefe = berechneSchittAbstand(2.5) + cfgHaus.DickeAussenwand;
-      // Wohnflaeche korrigieren:
-      const x = berechneSchittAbstand(2.3);
-      wflOG += x * cfgHaus.GaubeOstBreite;
+      wflOG23 += x23 * cfgHaus.GaubeOstBreite;
+      wflOG15 += x15 * cfgHaus.GaubeOstBreite;
     }
 
     // Gaube West
     if(cfgHaus.GaubeWestBreite>0.1) {
-
-      // const mitteAussen = middlePoint(polyAussen[1], polyAussen[7]);
-      // const tiefe = berechneSchittAbstand(2.5) + cfgHaus.DickeAussenwand;
-      // Wohnflaeche korrigieren:
-      const x = berechneSchittAbstand(2.3);
-      wflOG += x * cfgHaus.GaubeWestBreite;
+      wflOG23 += x23 * cfgHaus.GaubeWestBreite;
+      wflOG15 += x15 * cfgHaus.GaubeWestBreite;
     }
+    document.getElementById("InnenflaecheOG").innerText
+      = wflOG23.toFixed(2).toString() + "m²";
+    document.getElementById("WohnflaecheOG").innerText
+      = wflOG15.toFixed(2).toString() + "m²";
 
     // Anbau Innen
     const polyAnbauInnen = cfgHaus.getPolygonAnbauInnen();
@@ -1166,11 +1184,21 @@ function berechneTabellenDaten() {
     } else {
       document.getElementById("InnenflaecheAnbau").innerText = "";
     }
-    const wflGesamt = wflOG + wflEG + wflAnbau;
-    document.getElementById("InnenflaecheGesamt").innerText
-      = wflGesamt.toFixed(2).toString() + "m²";
 
-    const budgetHaus = wflGesamt*9000 - 705262.15 - 140000;
+    // FIXME: Von der Wohnfläche mussen noch Treppe und Innenwaende abgezogen werden
+    const wfl15Abzug = 10;    // Treppe und Innenwaende
+    // const wfl23Gesamt = wflOG23 + wflEG + wflAnbau;
+    const wfl15Gesamt = wflOG15 + wflEG + wflAnbau - wfl15Abzug;
+    // document.getElementById("InnenflaecheGesamt").innerText
+    //   = wfl23Gesamt.toFixed(2).toString() + "m²";
+     document.getElementById("WohnflaecheGesamt").innerText
+      = wfl15Gesamt.toFixed(2).toString() + "m²";
+
+    const prozentGeschossigkeit = 100 * wflOG23 / (wflAnbau + wflEG);
+    document.getElementById("InnenflaecheOGzuEG").innerText
+      = prozentGeschossigkeit.toFixed(1).toString() + "%";
+
+    const budgetHaus = wfl15Gesamt*9000 - 705262.15 - 140000;
     document.getElementById("BudgetHaus").innerText
       = (Math.round(budgetHaus/1000)).toString() + " Tausend €";
   }
@@ -1189,13 +1217,13 @@ function zeichne2DGrundstueck() {
 
 
   // Pfeil nach Norden
-  const nordWinkel = -5;
+  const nordWinkel = -4.9;   // so gut wie's geht aus der Vermessungsskizze abgelesen
   const nordpfeilStart = new Point(cfgGrundstueck.OstWestLaengeSuedseite * 3/4,
                                    cfgGrundstueck.NordSuedLaengeWestseite / 2);
-  const nordpfeilEnde = rotatePointPivot(copyPoint(nordpfeilStart, 0, -5),
+  const nordpfeilEnde = rotatePointPivot(copyPoint(nordpfeilStart, 0, -3),
                                          nordWinkel, nordpfeilStart);
   console.log("Hallo");
-  drawArrow(nordpfeilStart.px, nordpfeilStart.py, nordpfeilEnde.px, nordpfeilEnde.py, 2.0, false);
+  drawArrow(nordpfeilStart.px, nordpfeilStart.py, nordpfeilEnde.px, nordpfeilEnde.py, 1.0, false);
 
 
   const polyGrdst = cfgGrundstueck.Polygon;
@@ -1427,7 +1455,7 @@ function zeichne2DHaus() {
     }
   }
   const wflEG = areaPolygon(polyHausInnenEG);
-  let wflOG = berechneOG();   // wird noch durch die Gauben korrigiert
+  let wflOG23 = berechneOG(2.3);   // wird noch durch die Gauben korrigiert
 
   // Gaube-Ost
   // Der Code hier doch doppelt!
@@ -1437,10 +1465,10 @@ function zeichne2DHaus() {
   let mitteAussen = middlePoint(rotatePoint(polyAussen[4], -cfgHaus.HausDrehWinkel),
                                 rotatePoint(polyAussen[5], -cfgHaus.HausDrehWinkel));
   // let mitteAussen = middlePoint(polyAussen[4], polyAussen[5]);
-  let tiefe = berechneSchittAbstand(2.5) + cfgHaus.DickeAussenwand;
+  let tiefe = berechneSchittAbstand(cfgHaus.RaumhoeheOG) + cfgHaus.DickeAussenwand;
   // Wohnflaeche korrigieren:
   let x = berechneSchittAbstand(2.3);
-  wflOG += x * cfgHaus.GaubeOstBreite;
+  wflOG23 += x * cfgHaus.GaubeOstBreite;
 
   if (cfgGrundstueck.zeigeHaus && cfgHaus.zeigeOG && cfgHaus.GaubeOstBreite>0.1) {
     const polyGaubeAussen = [copyPoint(mitteAussen, 0, cfgHaus.GaubeOstBreite/2),
@@ -1462,7 +1490,7 @@ function zeichne2DHaus() {
   tiefe = berechneSchittAbstand(2.5) + cfgHaus.DickeAussenwand;
   // Wohnflaeche korrigieren:
   x = berechneSchittAbstand(2.3);
-  wflOG += x * cfgHaus.GaubeWestBreite;
+  wflOG23 += x * cfgHaus.GaubeWestBreite;
 
   if (cfgGrundstueck.zeigeHaus && cfgHaus.zeigeOG && cfgHaus.GaubeWestBreite>0.1) {
     const polyGaubeAussen = [copyPoint(mitteAussen, 0, cfgHaus.GaubeWestBreite/2),
@@ -1484,7 +1512,7 @@ function zeichne2DHaus() {
     drawEnv2D.ctx2D.fillText(str, comHausInnen.px, comHausInnen.py);
     str = "EG: " + wflEG.toFixed(1).toString() + "m²";
     drawEnv2D.ctx2D.fillText(str, comHausInnen.px, comHausInnen.py+8);
-    str = "OG: " + wflOG.toFixed(1).toString() + "m²";
+    str = "OG: " + wflOG23.toFixed(1).toString() + "m²";
     drawEnv2D.ctx2D.fillText(str, comHausInnen.px, comHausInnen.py+16);
   }
 
@@ -1624,7 +1652,6 @@ function zeichne2DCarport() {
 
 // Main
 function zeichneGrundstuecksPlan() {
-  // berechneOG();
   drawEnv2D = drawEnv2DGrundstueck();
   drawEnv2D.setStdTransformState();
   drawEnv2D.ctx2D.clearRect(0,0, drawEnv2D.canvas.width, drawEnv2D.canvas.height);
